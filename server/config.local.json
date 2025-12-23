@@ -1,0 +1,39 @@
+{
+  "env": "dev",
+  "http": {
+    "addr": ":8080",
+    "allowedOrigins": ["http://localhost:3000"],
+    "cookieDomain": "",
+    "cookieSecure": false
+  },
+  "mongo": {
+    "host": "localhost:27017",
+    "database": "stockflows"
+  },
+  "minio": {
+    "endpoint": "localhost:9000",
+    "accessKey": "minioadmin",
+    "secretKey": "minioadmin",
+    "useSSL": false,
+    "bucket": "stockflows",
+    "region": "local",
+    "publicUrl": "http://localhost:9000/stockflows"
+  },
+  "session": {
+    "store": "mongodb",
+    "collection": "sessions",
+    "ttlSeconds": 604800,
+    "cookieName": "sf_session"
+  },
+  "seed": {
+    "enabled": false,
+    "adminEmail": "admin@stockflows.local",
+    "adminPassword": "admin1234"
+  },
+  "omise": {
+    "publicKey": "",
+    "secretKey": "",
+    "webhookSecret": ""
+  }
+}
+
