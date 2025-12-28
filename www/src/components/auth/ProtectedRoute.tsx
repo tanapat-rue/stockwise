@@ -1,51 +1,40 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/stores/ui-store';
-import { useAuth } from '@/features/auth';
-import { Spinner } from '@/components/ui/spinner';
+import { Navigate, useLocation } from 'react-router-dom'
+import { useAuthStore } from '@/stores/auth-store'
+import { Spinner } from '@/components/ui/spinner'
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredPermission?: string;
-  requiredRoles?: string[];
+  children: React.ReactNode
+  requiredRoles?: Array<'PLATFORM_ADMIN' | 'ORG_ADMIN' | 'BRANCH_MANAGER' | 'STAFF'>
+  requiredPermission?: string
 }
 
 export function ProtectedRoute({
   children,
-  requiredPermission,
   requiredRoles,
+  requiredPermission,
 }: ProtectedRouteProps) {
-  const location = useLocation();
-  const { isAuthenticated, isLoading, hasPermission, hasRole } = useAuthStore();
-  const { isLoading: isAuthLoading, isError } = useAuth();
+  const location = useLocation()
+  const { isAuthenticated, isLoading, hasRole, hasPermission } = useAuthStore()
 
-  // Show loading state while checking authentication
-  if (isLoading || isAuthLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Spinner size="lg" />
+        <Spinner size="lg" label="Loading..." />
       </div>
-    );
+    )
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated || isError) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Check required permission
+  if (requiredRoles && !hasRole(...requiredRoles)) {
+    return <Navigate to="/unauthorized" replace />
+  }
+
   if (requiredPermission && !hasPermission(requiredPermission)) {
-    return <Navigate to="/unauthorized" replace />;
+    return <Navigate to="/unauthorized" replace />
   }
 
-  // Check required roles
-  if (requiredRoles && requiredRoles.length > 0) {
-    const hasRequiredRole = requiredRoles.some((role) =>
-      hasRole(role as any)
-    );
-    if (!hasRequiredRole) {
-      return <Navigate to="/unauthorized" replace />;
-    }
-  }
-
-  return <>{children}</>;
+  return <>{children}</>
 }

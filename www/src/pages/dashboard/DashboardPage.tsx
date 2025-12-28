@@ -1,251 +1,222 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'
 import {
-  DollarSign,
-  ShoppingBag,
   Package,
-  Users,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  XCircle,
-  ArrowRight,
-  Clock,
+  ShoppingCart,
   Truck,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useDashboardKPIs } from '@/features/reports';
-import { formatCurrency } from '@/lib/utils';
+  Users,
+  AlertTriangle,
+  TrendingUp,
+  ArrowUpRight,
+} from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { StatCard } from '@/components/ui/stat-card'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function DashboardPage() {
-  const { data: kpis, isLoading } = useDashboardKPIs();
+  const { organization } = useAuthStore()
 
-  // Transform API response to the format expected by the UI
-  // API returns: totalRevenue, orderCount, pendingOrders, customerCount, inventoryValue, lowStockCount, outOfStockCount
-  const data = {
-    sales: {
-      today: kpis?.totalRevenue || 0,
-      thisWeek: kpis?.totalRevenue || 0,
-      thisMonth: kpis?.totalRevenue || 0,
-      growth: 0,
-    },
-    orders: {
-      pending: kpis?.pendingOrders || 0,
-      processing: 0,
-      shipped: 0,
-      completed: Math.max(0, (kpis?.orderCount || 0) - (kpis?.pendingOrders || 0)),
-    },
-    inventory: {
-      totalValue: kpis?.inventoryValue || 0,
-      lowStockCount: kpis?.lowStockCount || 0,
-      outOfStockCount: kpis?.outOfStockCount || 0,
-    },
-    customers: {
-      total: kpis?.customerCount || 0,
-      newThisMonth: 0,
-    },
-  };
+  // Mock data - replace with actual API calls
+  const stats = {
+    totalProducts: 1247,
+    totalOrders: 89,
+    pendingOrders: 12,
+    lowStockItems: 8,
+    revenue: 458900,
+    revenueChange: 12.5,
+    ordersChange: 8.2,
+  }
+
+  const recentOrders = [
+    { id: 'ORD-001', customer: 'John Doe', total: 2500, status: 'PENDING' },
+    { id: 'ORD-002', customer: 'Jane Smith', total: 4800, status: 'CONFIRMED' },
+    { id: 'ORD-003', customer: 'Bob Wilson', total: 1200, status: 'SHIPPED' },
+  ]
+
+  const lowStockItems = [
+    { id: '1', name: 'Widget A', sku: 'WID-001', quantity: 5, reorderPoint: 10 },
+    { id: '2', name: 'Gadget B', sku: 'GAD-002', quantity: 3, reorderPoint: 15 },
+    { id: '3', name: 'Component C', sku: 'COM-003', quantity: 8, reorderPoint: 20 },
+  ]
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'warning'
+      case 'CONFIRMED':
+        return 'default'
+      case 'SHIPPED':
+        return 'success'
+      case 'DELIVERED':
+        return 'success'
+      default:
+        return 'secondary'
+    }
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Welcome back! Here's what's happening with your store.
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back to {organization?.name || 'StockFlows'}
         </p>
       </div>
 
-      {/* KPI Cards */}
+      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Products"
+          value={stats.totalProducts.toLocaleString()}
+          icon={<Package className="h-4 w-4" />}
+          description="Active products in catalog"
+        />
+        <StatCard
+          title="Total Orders"
+          value={stats.totalOrders}
+          icon={<ShoppingCart className="h-4 w-4" />}
+          description={
+            <span className="flex items-center text-green-600">
+              <ArrowUpRight className="mr-1 h-3 w-3" />
+              {stats.ordersChange}% from last month
+            </span>
+          }
+        />
+        <StatCard
+          title="Revenue"
+          value={`฿${(stats.revenue / 100).toLocaleString()}`}
+          icon={<TrendingUp className="h-4 w-4" />}
+          description={
+            <span className="flex items-center text-green-600">
+              <ArrowUpRight className="mr-1 h-3 w-3" />
+              {stats.revenueChange}% from last month
+            </span>
+          }
+        />
+        <StatCard
+          title="Low Stock Alerts"
+          value={stats.lowStockItems}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          description="Items below reorder point"
+          className={stats.lowStockItems > 0 ? 'border-orange-200 bg-orange-50' : ''}
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent Orders */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Sales</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Orders</CardTitle>
+              <CardDescription>Latest customer orders</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/orders">View All</Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.sales.today)}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {data.sales.growth >= 0 ? (
-                <>
-                  <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
-                  <span className="text-green-500">+{data.sales.growth}%</span>
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="mr-1 h-3 w-3 text-red-500" />
-                  <span className="text-red-500">{data.sales.growth}%</span>
-                </>
-              )}
-              <span className="ml-1">from yesterday</span>
+            <div className="space-y-4">
+              {recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div>
+                    <p className="font-medium">{order.id}</p>
+                    <p className="text-sm text-muted-foreground">{order.customer}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">
+                      ฿{(order.total / 100).toLocaleString()}
+                    </span>
+                    <Badge variant={getStatusColor(order.status)}>{order.status}</Badge>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
+        {/* Low Stock Items */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                Low Stock Items
+              </CardTitle>
+              <CardDescription>Items needing restock</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/stock">View All</Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {data.orders.pending + data.orders.processing + data.orders.shipped}
+            <div className="space-y-4">
+              {lowStockItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">{item.sku}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-orange-600">{item.quantity} left</p>
+                    <p className="text-sm text-muted-foreground">
+                      Reorder at {item.reorderPoint}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <Button className="w-full" variant="outline">
+                <Truck className="mr-2 h-4 w-4" />
+                Create Quick PO
+              </Button>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{data.orders.pending} pending</span>
-              <span>•</span>
-              <span>{data.orders.shipped} shipped</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.inventory.totalValue)}</div>
-            <div className="flex items-center gap-2 text-xs">
-              {data.inventory.lowStockCount > 0 && (
-                <Badge variant="warning" className="text-xs">
-                  {data.inventory.lowStockCount} low stock
-                </Badge>
-              )}
-              {data.inventory.outOfStockCount > 0 && (
-                <Badge variant="destructive" className="text-xs">
-                  {data.inventory.outOfStockCount} out
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.customers.total}</div>
-            <p className="text-xs text-muted-foreground">
-              +{data.customers.newThisMonth} new this month
-            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions & Alerts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Order Status Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Status</CardTitle>
-            <CardDescription>Current order pipeline</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-yellow-500" />
-                <span>Pending Confirmation</span>
-              </div>
-              <Badge variant="secondary">{data.orders.pending}</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-blue-500" />
-                <span>Processing</span>
-              </div>
-              <Badge variant="secondary">{data.orders.processing}</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-purple-500" />
-                <span>Shipped</span>
-              </div>
-              <Badge variant="secondary">{data.orders.shipped}</Badge>
-            </div>
-            <Button variant="outline" className="w-full" asChild>
-              <Link to="/orders">
-                View All Orders
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Stock Alerts */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Stock Alerts</CardTitle>
-            <CardDescription>Items requiring attention</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {data.inventory.outOfStockCount > 0 && (
-              <div className="flex items-center justify-between rounded-lg border border-destructive/50 bg-destructive/10 p-3">
-                <div className="flex items-center gap-2">
-                  <XCircle className="h-4 w-4 text-destructive" />
-                  <span className="font-medium">Out of Stock</span>
-                </div>
-                <Badge variant="destructive">{data.inventory.outOfStockCount}</Badge>
-              </div>
-            )}
-            {data.inventory.lowStockCount > 0 && (
-              <div className="flex items-center justify-between rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                  <span className="font-medium">Low Stock</span>
-                </div>
-                <Badge variant="warning">{data.inventory.lowStockCount}</Badge>
-              </div>
-            )}
-            {data.inventory.outOfStockCount === 0 && data.inventory.lowStockCount === 0 && (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <span>All stock levels are healthy</span>
-              </div>
-            )}
-            <Button variant="outline" className="w-full" asChild>
-              <Link to="/stock">
-                Manage Inventory
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sales Summary */}
+      {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Sales Summary</CardTitle>
-          <CardDescription>Revenue overview</CardDescription>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Common tasks and shortcuts</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground">Today</p>
-              <p className="text-2xl font-bold">{formatCurrency(data.sales.today)}</p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground">This Week</p>
-              <p className="text-2xl font-bold">{formatCurrency(data.sales.thisWeek)}</p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground">This Month</p>
-              <p className="text-2xl font-bold">{formatCurrency(data.sales.thisMonth)}</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <Button variant="outline" asChild>
-              <Link to="/reports">
-                View Detailed Reports
-                <ArrowRight className="ml-2 h-4 w-4" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Button variant="outline" className="h-auto flex-col py-4" asChild>
+              <Link to="/orders/new">
+                <ShoppingCart className="mb-2 h-6 w-6" />
+                <span>New Order</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col py-4" asChild>
+              <Link to="/purchase-orders/new">
+                <Truck className="mb-2 h-6 w-6" />
+                <span>New Purchase Order</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col py-4" asChild>
+              <Link to="/products">
+                <Package className="mb-2 h-6 w-6" />
+                <span>Manage Products</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col py-4" asChild>
+              <Link to="/customers">
+                <Users className="mb-2 h-6 w-6" />
+                <span>View Customers</span>
               </Link>
             </Button>
           </div>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

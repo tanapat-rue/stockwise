@@ -1,398 +1,253 @@
-import { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ColumnDef } from '@tanstack/react-table';
+import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { AlertTriangle, Package, Plus, Minus, MoreHorizontal } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { DataTable, SortableHeader } from '@/components/ui/data-table'
 import {
-  Search,
-  Package,
-  AlertTriangle,
-  XCircle,
-  ArrowUpDown,
-  Filter,
-  Download,
-  Plus,
-  Minus,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { PageHeader } from '@/components/ui/page-header';
-import { DataTable } from '@/components/ui/data-table';
-import { Badge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/empty-state';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useStockLevels, useLowStockProducts, useOutOfStockProducts } from '@/features/inventory';
-import type { StockLevel } from '@/features/inventory';
-import { debounce } from '@/lib/utils';
-import { StockAdjustmentDialog } from './StockAdjustmentDialog';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Label } from '@/components/ui/label'
+import { useStock, useAdjustStock } from '@/features/inventory'
+import type { StockLevel } from '@/features/inventory'
 
 export function StockPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState('')
+  const [showLowStock, setShowLowStock] = useState(false)
+  const [adjustingItem, setAdjustingItem] = useState<StockLevel | null>(null)
+  const [adjustmentType, setAdjustmentType] = useState<'add' | 'subtract'>('add')
+  const [adjustmentQty, setAdjustmentQty] = useState('')
+  const [adjustmentReason, setAdjustmentReason] = useState('')
 
-  // Filters
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const tab = searchParams.get('tab') || 'all';
-  const page = parseInt(searchParams.get('page') || '0', 10);
+  const { data: stockData, isLoading } = useStock({ search, lowStock: showLowStock })
+  const adjustStock = useAdjustStock()
 
-  // Adjustment dialog state
-  const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
-  const [selectedStock, setSelectedStock] = useState<StockLevel | null>(null);
-  const [adjustmentType, setAdjustmentType] = useState<'ADD' | 'REMOVE'>('ADD');
+  const stockLevels = stockData?.data || []
 
-  // Data - switch based on tab
-  const { data: allStockData, isLoading: allLoading } = useStockLevels({
-    search: search || undefined,
-    page,
-    limit: 20,
-  });
-
-  const { data: lowStockData, isLoading: lowLoading } = useLowStockProducts();
-  const { data: outOfStockData, isLoading: outLoading } = useOutOfStockProducts();
-
-  // Get current data based on tab
-  const currentData = useMemo(() => {
-    switch (tab) {
-      case 'low':
-        return { data: lowStockData || [], isLoading: lowLoading };
-      case 'out':
-        return { data: outOfStockData || [], isLoading: outLoading };
-      default:
-        return {
-          data: allStockData?.data || [],
-          isLoading: allLoading,
-          meta: allStockData?.meta,
-        };
-    }
-  }, [tab, allStockData, lowStockData, outOfStockData, allLoading, lowLoading, outLoading]);
-
-  // Debounced search
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((value: string) => {
-        const params = new URLSearchParams(searchParams);
-        if (value) {
-          params.set('search', value);
-        } else {
-          params.delete('search');
-        }
-        params.set('page', '0');
-        setSearchParams(params);
-      }, 300),
-    [searchParams, setSearchParams]
-  );
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    debouncedSearch(value);
-  };
-
-  const handleTabChange = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('tab', value);
-    params.set('page', '0');
-    setSearchParams(params);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('page', newPage.toString());
-    setSearchParams(params);
-  };
-
-  const handleAdjust = (stock: StockLevel, type: 'ADD' | 'REMOVE') => {
-    setSelectedStock(stock);
-    setAdjustmentType(type);
-    setAdjustmentDialogOpen(true);
-  };
-
-  // Stats cards data
-  const stats = useMemo(() => ({
-    lowStockCount: lowStockData?.length || 0,
-    outOfStockCount: outOfStockData?.length || 0,
-  }), [lowStockData, outOfStockData]);
-
-  // Table columns
   const columns: ColumnDef<StockLevel>[] = [
     {
-      accessorKey: 'productName',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="-ml-4"
-        >
-          Product
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      accessorKey: 'productSku',
+      header: ({ column }) => <SortableHeader column={column}>SKU</SortableHeader>,
       cell: ({ row }) => (
-        <div>
-          <div className="font-medium">{row.original.productName}</div>
-          <div className="text-sm text-muted-foreground">
-            {row.original.productSku}
-            {row.original.variantName && (
-              <span className="ml-2 text-xs">({row.original.variantName})</span>
-            )}
-          </div>
-        </div>
+        <span className="font-mono text-sm">{row.getValue('productSku')}</span>
       ),
     },
     {
-      accessorKey: 'branchName',
-      header: 'Branch',
+      accessorKey: 'productName',
+      header: ({ column }) => <SortableHeader column={column}>Product</SortableHeader>,
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.branchName}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+            <Package className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <span className="font-medium">{row.getValue('productName')}</span>
+        </div>
       ),
     },
     {
       accessorKey: 'quantity',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="-ml-4"
-        >
-          Quantity
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">
-          <span className={row.original.isOutOfStock ? 'text-destructive font-medium' : ''}>
-            {row.original.quantity}
-          </span>
-          <span className="text-muted-foreground ml-1">{row.original.unit}</span>
-        </div>
-      ),
+      header: ({ column }) => <SortableHeader column={column}>On Hand</SortableHeader>,
+      cell: ({ row }) => {
+        const qty = row.getValue('quantity') as number
+        const isLow = row.original.isLowStock
+        return (
+          <div className="flex items-center gap-2">
+            <span className={isLow ? 'font-bold text-orange-600' : ''}>{qty}</span>
+            {isLow && <AlertTriangle className="h-4 w-4 text-orange-500" />}
+          </div>
+        )
+      },
     },
     {
-      accessorKey: 'reservedQuantity',
+      accessorKey: 'reserved',
       header: 'Reserved',
       cell: ({ row }) => (
-        <div className="text-right text-muted-foreground">
-          {row.original.reservedQuantity > 0 ? row.original.reservedQuantity : '—'}
-        </div>
+        <span className="text-muted-foreground">{row.getValue('reserved')}</span>
       ),
     },
     {
       accessorKey: 'availableQuantity',
-      header: 'Available',
-      cell: ({ row }) => (
-        <div className="text-right font-medium">
-          {row.original.availableQuantity}
-          <span className="text-muted-foreground ml-1">{row.original.unit}</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'reorderPoint',
-      header: 'Reorder At',
-      cell: ({ row }) => (
-        <div className="text-right text-muted-foreground">
-          {row.original.reorderPoint > 0 ? row.original.reorderPoint : '—'}
-        </div>
-      ),
-    },
-    {
-      id: 'status',
-      header: 'Status',
+      header: ({ column }) => <SortableHeader column={column}>Available</SortableHeader>,
       cell: ({ row }) => {
-        if (row.original.isOutOfStock) {
-          return (
-            <Badge variant="destructive" className="gap-1">
-              <XCircle className="h-3 w-3" />
-              Out of Stock
-            </Badge>
-          );
-        }
-        if (row.original.isLowStock) {
-          return (
-            <Badge variant="warning" className="gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              Low Stock
-            </Badge>
-          );
-        }
+        const available = row.getValue('availableQuantity') as number
         return (
-          <Badge variant="secondary">In Stock</Badge>
-        );
+          <Badge variant={available > 0 ? 'success' : 'destructive'}>
+            {available}
+          </Badge>
+        )
       },
+    },
+    {
+      accessorKey: 'minStock',
+      header: 'Reorder Point',
+      cell: ({ row }) => row.getValue('minStock'),
     },
     {
       id: 'actions',
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleAdjust(row.original, 'ADD')}
-            title="Add stock"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleAdjust(row.original, 'REMOVE')}
-            title="Remove stock"
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => {
+                setAdjustingItem(row.original)
+                setAdjustmentType('add')
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Stock
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setAdjustingItem(row.original)
+                setAdjustmentType('subtract')
+              }}
+            >
+              <Minus className="mr-2 h-4 w-4" />
+              Subtract Stock
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     },
-  ];
+  ]
+
+  const handleAdjustStock = () => {
+    if (!adjustingItem || !adjustmentQty || !adjustmentReason) return
+
+    const qty = parseInt(adjustmentQty)
+    if (isNaN(qty) || qty <= 0) return
+
+    adjustStock.mutate(
+      {
+        productId: adjustingItem.productId,
+        branchId: adjustingItem.branchId,
+        quantity: adjustmentType === 'add' ? qty : -qty,
+        reason: adjustmentReason,
+      },
+      {
+        onSuccess: () => {
+          setAdjustingItem(null)
+          setAdjustmentQty('')
+          setAdjustmentReason('')
+        },
+      }
+    )
+  }
+
+  const lowStockCount = stockLevels.filter((s) => s.isLowStock).length
 
   return (
-    <div className="p-6">
-      <PageHeader
-        title="Stock Levels"
-        description="Monitor and adjust inventory across all branches"
-        actions={
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-        }
-      />
-
-      {/* Stats Cards */}
-      <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.lowStockCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Below reorder point
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
-            <XCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.outOfStockCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Need immediate attention
-            </p>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Stock Levels</h1>
+          <p className="text-muted-foreground">Monitor and manage inventory</p>
+        </div>
+        {lowStockCount > 0 && (
+          <Badge variant="warning" className="text-base px-3 py-1">
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            {lowStockCount} items low
+          </Badge>
+        )}
       </div>
 
-      {/* Tabs */}
-      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <TabsList>
-            <TabsTrigger value="all">All Stock</TabsTrigger>
-            <TabsTrigger value="low" className="gap-2">
-              Low Stock
-              {stats.lowStockCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                  {stats.lowStockCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="out" className="gap-2">
-              Out of Stock
-              {stats.outOfStockCount > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 px-1.5">
-                  {stats.outOfStockCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+      {/* Filters */}
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button
+          variant={showLowStock ? 'default' : 'outline'}
+          onClick={() => setShowLowStock(!showLowStock)}
+        >
+          <AlertTriangle className="mr-2 h-4 w-4" />
+          Low Stock Only
+        </Button>
+      </div>
 
-          {/* Search */}
-          <div className="relative w-full sm:w-[300px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
-        <TabsContent value="all" className="mt-4">
-          {currentData.data.length > 0 ? (
-            <DataTable
-              columns={columns}
-              data={currentData.data}
-              isLoading={currentData.isLoading}
-              pageCount={currentData.meta?.totalPages || 1}
-              pageIndex={page}
-              pageSize={20}
-              onPaginationChange={handlePageChange}
-            />
-          ) : !currentData.isLoading ? (
-            <EmptyState
-              icon={Package}
-              title="No stock data"
-              description="Stock levels will appear here once products are added to inventory"
-            />
-          ) : (
-            <DataTable columns={columns} data={[]} isLoading={true} pageSize={20} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="low" className="mt-4">
-          {currentData.data.length > 0 ? (
-            <DataTable
-              columns={columns}
-              data={currentData.data}
-              isLoading={currentData.isLoading}
-              pageSize={20}
-            />
-          ) : !currentData.isLoading ? (
-            <EmptyState
-              icon={AlertTriangle}
-              title="No low stock items"
-              description="All products are above their reorder points"
-            />
-          ) : (
-            <DataTable columns={columns} data={[]} isLoading={true} pageSize={20} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="out" className="mt-4">
-          {currentData.data.length > 0 ? (
-            <DataTable
-              columns={columns}
-              data={currentData.data}
-              isLoading={currentData.isLoading}
-              pageSize={20}
-            />
-          ) : !currentData.isLoading ? (
-            <EmptyState
-              icon={XCircle}
-              title="No out of stock items"
-              description="All products have available inventory"
-            />
-          ) : (
-            <DataTable columns={columns} data={[]} isLoading={true} pageSize={20} />
-          )}
-        </TabsContent>
-      </Tabs>
+      {/* Table */}
+      <DataTable
+        columns={columns}
+        data={stockLevels}
+        isLoading={isLoading}
+        emptyPreset="inventory"
+        emptyMessage="Add products and stock to see inventory information."
+      />
 
       {/* Adjustment Dialog */}
-      <StockAdjustmentDialog
-        open={adjustmentDialogOpen}
-        onOpenChange={setAdjustmentDialogOpen}
-        stockLevel={selectedStock}
-        initialType={adjustmentType}
-      />
+      <Dialog open={!!adjustingItem} onOpenChange={() => setAdjustingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {adjustmentType === 'add' ? 'Add Stock' : 'Subtract Stock'}
+            </DialogTitle>
+            <DialogDescription>
+              {adjustmentType === 'add' ? 'Add' : 'Remove'} stock for{' '}
+              <strong>{adjustingItem?.productName}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">Current quantity:</div>
+              <Badge variant="outline">{adjustingItem?.quantity}</Badge>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                value={adjustmentQty}
+                onChange={(e) => setAdjustmentQty(e.target.value)}
+                placeholder="Enter quantity"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason</Label>
+              <Input
+                id="reason"
+                value={adjustmentReason}
+                onChange={(e) => setAdjustmentReason(e.target.value)}
+                placeholder="e.g., Physical count adjustment"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdjustingItem(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant={adjustmentType === 'subtract' ? 'destructive' : 'default'}
+              onClick={handleAdjustStock}
+              loading={adjustStock.isPending}
+              disabled={!adjustmentQty || !adjustmentReason}
+            >
+              {adjustmentType === 'add' ? 'Add' : 'Subtract'} Stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }

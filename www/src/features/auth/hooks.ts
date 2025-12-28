@@ -1,173 +1,144 @@
-import { useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { queryKeys } from '@/lib/query-client';
-import { apiClient } from '@/lib/api-client';
-import { useAuthStore } from '@/stores/ui-store';
-import { authApi } from './api';
-import type { LoginRequest } from './types';
-import { toast } from '@/components/ui/toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { authApi, type LoginRequest, type SignupRequest } from './api'
+import { useAuthStore } from '@/stores/auth-store'
+import { apiClient } from '@/lib/api-client'
+import { queryKeys } from '@/lib/query-client'
 
-// Hook to fetch and sync auth state
 export function useAuth() {
-  const { setUser, setOrganization, setBranch, setOrganizations, setBranches, setIsLoading, logout } =
-    useAuthStore();
+  const {
+    setUser,
+    setOrganization,
+    setBranch,
+    setOrganizations,
+    setBranches,
+    setLoading,
+    logout: clearAuth,
+  } = useAuthStore()
 
-  const query = useQuery({
+  return useQuery({
     queryKey: queryKeys.auth.me(),
     queryFn: async () => {
-      const data = await authApi.me();
-      // Sync state to Zustand store
-      setUser(data.user);
-      setOrganization(data.organization);
-      setOrganizations(data.organizations);
-      setBranches(data.branches);
+      try {
+        const response = await authApi.me()
+        const { user, organization, branch, organizations, branches } = response
 
-      // Set API client context
-      apiClient.setOrg(data.organization.id);
-      if (data.branches.length > 0) {
-        const mainBranch = data.branches.find(b => b.isMain) || data.branches[0];
-        setBranch(mainBranch);
-        apiClient.setBranch(mainBranch.id);
+        setUser(user)
+        setOrganization(organization)
+        setBranch(branch || null)
+        setOrganizations(organizations)
+        setBranches(branches)
+
+        // Update API client context
+        apiClient.setOrgContext(organization?.id || null, branch?.id || null)
+
+        return response
+      } catch {
+        clearAuth()
+        throw new Error('Not authenticated')
+      } finally {
+        setLoading(false)
       }
-
-      return data;
     },
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  // Set isLoading to false when query settles (success or error)
-  useEffect(() => {
-    if (!query.isLoading && !query.isFetching) {
-      setIsLoading(false);
-    }
-  }, [query.isLoading, query.isFetching, setIsLoading]);
-
-  return query;
+  })
 }
 
-// Hook for login mutation
 export function useLogin() {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const { setUser, setOrganization, setBranch, setOrganizations, setBranches } = useAuthStore();
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const {
+    setUser,
+    setOrganization,
+    setBranch,
+    setOrganizations,
+    setBranches,
+  } = useAuthStore()
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
-    onSuccess: (data) => {
-      // Update store
-      setUser(data.user);
-      setOrganization(data.organization);
-      setOrganizations(data.organizations);
-      setBranches(data.branches);
+    onSuccess: (response) => {
+      const { user, organization, branch, organizations, branches } = response
 
-      // Set API client context
-      apiClient.setOrg(data.organization.id);
-      if (data.branches.length > 0) {
-        const mainBranch = data.branches.find(b => b.isMain) || data.branches[0];
-        setBranch(mainBranch);
-        apiClient.setBranch(mainBranch.id);
-      }
+      setUser(user)
+      setOrganization(organization)
+      setBranch(branch || null)
+      setOrganizations(organizations)
+      setBranches(branches)
 
-      // Invalidate auth query to refresh
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+      // Update API client context
+      apiClient.setOrgContext(organization?.id || null, branch?.id || null)
 
-      toast.success('Welcome back!');
-      navigate('/dashboard');
+      // Invalidate auth query
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.all })
+
+      toast.success('Welcome back!')
+      navigate('/dashboard')
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Login failed');
+      toast.error(error.message || 'Login failed')
     },
-  });
+  })
 }
 
-// Hook for logout mutation
+export function useSignup() {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const {
+    setUser,
+    setOrganization,
+    setBranch,
+    setOrganizations,
+    setBranches,
+  } = useAuthStore()
+
+  return useMutation({
+    mutationFn: (data: SignupRequest) => authApi.signup(data),
+    onSuccess: (response) => {
+      // Signup response has slightly different structure (org instead of organization)
+      const { user, organization, branch, organizations, branches } = response as {
+        user: typeof response.user
+        organization: typeof response.organization
+        branch?: typeof response.branch
+        organizations: typeof response.organizations
+        branches: typeof response.branches
+      }
+
+      setUser(user)
+      setOrganization(organization)
+      setBranch(branch || null)
+      setOrganizations(organizations || [organization])
+      setBranches(branches || [])
+
+      // Update API client context
+      apiClient.setOrgContext(organization?.id || null, branch?.id || null)
+
+      // Invalidate auth query
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.all })
+
+      toast.success('Account created successfully!')
+      navigate('/dashboard')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Signup failed')
+    },
+  })
+}
+
 export function useLogout() {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const { logout } = useAuthStore();
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { logout: clearAuth } = useAuthStore()
 
   return useMutation({
     mutationFn: () => authApi.logout(),
-    onSuccess: () => {
-      // Clear store
-      logout();
-      apiClient.setOrg(null);
-      apiClient.setBranch(null);
-
-      // Clear all queries
-      queryClient.clear();
-
-      toast.success('Logged out successfully');
-      navigate('/login');
+    onSettled: () => {
+      clearAuth()
+      apiClient.setOrgContext(null, null)
+      queryClient.clear()
+      navigate('/login')
     },
-  });
-}
-
-// Hook for switching organization
-export function useSwitchOrg() {
-  const queryClient = useQueryClient();
-  const { setOrganization, setBranch, setBranches } = useAuthStore();
-
-  return useMutation({
-    mutationFn: (orgId: string) => authApi.switchOrg(orgId),
-    onSuccess: (data) => {
-      setOrganization(data.organization);
-      setBranches(data.branches);
-
-      // Set API client context
-      apiClient.setOrg(data.organization.id);
-      if (data.branches.length > 0) {
-        const mainBranch = data.branches.find(b => b.isMain) || data.branches[0];
-        setBranch(mainBranch);
-        apiClient.setBranch(mainBranch.id);
-      }
-
-      // Invalidate all queries to refresh data for new org
-      queryClient.invalidateQueries();
-
-      toast.success(`Switched to ${data.organization.name}`);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to switch organization');
-    },
-  });
-}
-
-// Hook for switching branch
-export function useSwitchBranch() {
-  const queryClient = useQueryClient();
-  const { setBranch } = useAuthStore();
-
-  return useMutation({
-    mutationFn: (branchId: string) => authApi.switchBranch(branchId),
-    onSuccess: (data) => {
-      setBranch(data.branch);
-      apiClient.setBranch(data.branch.id);
-
-      // Invalidate queries that depend on branch
-      queryClient.invalidateQueries({ queryKey: queryKeys.stock.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
-
-      toast.success(`Switched to ${data.branch.name}`);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to switch branch');
-    },
-  });
-}
-
-// Hook for checking permissions
-export function usePermissions() {
-  const { hasPermission, hasRole, user } = useAuthStore();
-
-  return {
-    hasPermission,
-    hasRole,
-    user,
-    isAdmin: user?.role === 'PLATFORM_ADMIN' || user?.role === 'ORG_ADMIN',
-    isManager: user?.role === 'BRANCH_MANAGER',
-    isStaff: user?.role === 'STAFF',
-  };
+  })
 }

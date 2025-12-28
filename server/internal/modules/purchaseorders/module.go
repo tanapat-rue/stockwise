@@ -9,6 +9,7 @@ import (
 	"stockflows/server/internal/deps"
 	"stockflows/server/internal/models"
 	"stockflows/server/internal/repo"
+	"stockflows/server/internal/services/costing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -42,6 +43,8 @@ func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
 	g.POST("/:id/submit", m.submit)
 	g.POST("/:id/duplicate", m.duplicate)
 	g.POST("/:id/payment", m.recordPayment)
+	g.POST("/:id/status", m.updateStatus)
+	g.POST("/bulk-status", m.bulkUpdateStatus)
 }
 
 // POResponse is the frontend-expected format for purchase orders
@@ -135,14 +138,19 @@ func (m *Module) poToResponse(po models.PurchaseOrder, supplierName, branchName 
 		status = "PENDING" // In progress
 	}
 
-	paymentStatus := "UNPAID"
-	if po.Status == "RECEIVED" {
-		paymentStatus = "PAID"
-	}
-
 	// Calculate tax amount from rate (rate is stored as percentage, e.g., 7 for 7%)
 	taxAmount := int64(float64(subtotal-po.DiscountAmount) * (po.TaxRate / 100))
 	totalAmount := subtotal - po.DiscountAmount + taxAmount + po.ShippingCost
+
+	// Determine payment status based on actual paid amount
+	paymentStatus := "UNPAID"
+	if po.PaidAmount > 0 {
+		if po.PaidAmount >= totalAmount {
+			paymentStatus = "PAID"
+		} else {
+			paymentStatus = "PARTIAL"
+		}
+	}
 
 	return POResponse{
 		ID:                   po.ID,
@@ -165,8 +173,8 @@ func (m *Module) poToResponse(po models.PurchaseOrder, supplierName, branchName 
 		TaxAmount:            taxAmount,
 		ShippingCost:         po.ShippingCost,
 		TotalAmount:          totalAmount,
-		PaidAmount:           0,
-		DueAmount:            totalAmount,
+		PaidAmount:           po.PaidAmount,
+		DueAmount:            totalAmount - po.PaidAmount,
 		Notes:                po.Note,
 		InternalNotes:        po.InternalNotes,
 		CreatedBy:            "",
@@ -847,6 +855,10 @@ func (m *Module) receive(c *gin.Context) {
 
 		// Update product's last purchase cost for convenience (derived from PO).
 		_, _ = m.deps.Repo.UpdateProductByOrg(c.Request.Context(), orgID, item.ProductID, bson.M{"cost": item.UnitCost})
+
+		// Update moving average cost if product uses that costing method
+		costingSvc := costing.New(m.deps.Repo)
+		_ = costingSvc.UpdateMovingAverageOnReceive(c.Request.Context(), orgID, po.BranchID, item.ProductID, item.Quantity, item.UnitCost)
 	}
 
 	receivedDate := receivedAt.Format(time.RFC3339)
@@ -1057,15 +1069,147 @@ func (m *Module) recordPayment(c *gin.Context) {
 		return
 	}
 
-	// For now just return the PO as-is (payment tracking would need additional model fields)
+	// Update paid amount
+	newPaidAmount := po.PaidAmount + req.Amount
+	patch := bson.M{
+		"paidAmount": newPaidAmount,
+		"updatedAt":  time.Now().UTC(),
+	}
+
+	updated, err := m.deps.Repo.UpdatePurchaseOrderByOrg(c.Request.Context(), orgID, id, patch)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to record payment"})
+		return
+	}
+
 	supplierName := ""
-	if supplier, err := m.deps.Repo.GetSupplierByOrg(c.Request.Context(), orgID, po.SupplierID); err == nil {
+	if supplier, err := m.deps.Repo.GetSupplierByOrg(c.Request.Context(), orgID, updated.SupplierID); err == nil {
 		supplierName = supplier.Name
 	}
 	branchName := ""
-	if branch, err := m.deps.Repo.GetBranchByOrg(c.Request.Context(), orgID, po.BranchID); err == nil {
+	if branch, err := m.deps.Repo.GetBranchByOrg(c.Request.Context(), orgID, updated.BranchID); err == nil {
 		branchName = branch.Name
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": m.poToResponse(po, supplierName, branchName)})
+	c.JSON(http.StatusOK, gin.H{"data": m.poToResponse(updated, supplierName, branchName)})
+}
+
+func (m *Module) updateStatus(c *gin.Context) {
+	u := auth.CurrentUser(c)
+	orgID := auth.GetOrgIDForRequest(c, u)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "org context required"})
+		return
+	}
+
+	id := c.Param("id")
+
+	var req struct {
+		Status string `json:"status"`
+		Notes  string `json:"notes"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Map frontend status to backend status
+	backendStatus := req.Status
+	switch req.Status {
+	case "DRAFT":
+		backendStatus = "OPEN"
+	case "PENDING":
+		backendStatus = "RECEIVING"
+	case "PARTIAL":
+		backendStatus = "RECEIVING"
+	}
+
+	// Validate status transition
+	validStatuses := map[string]bool{
+		"OPEN": true, "RECEIVING": true, "RECEIVED": true, "CANCELLED": true,
+	}
+	if !validStatuses[backendStatus] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
+		return
+	}
+
+	patch := bson.M{
+		"status":    backendStatus,
+		"updatedAt": time.Now().UTC(),
+	}
+	if req.Notes != "" {
+		patch["internalNotes"] = req.Notes
+	}
+
+	updated, err := m.deps.Repo.UpdatePurchaseOrderByOrg(c.Request.Context(), orgID, id, patch)
+	if err != nil {
+		if err == repo.ErrNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "purchase order not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update status"})
+		return
+	}
+
+	supplierName := ""
+	if supplier, err := m.deps.Repo.GetSupplierByOrg(c.Request.Context(), orgID, updated.SupplierID); err == nil {
+		supplierName = supplier.Name
+	}
+	branchName := ""
+	if branch, err := m.deps.Repo.GetBranchByOrg(c.Request.Context(), orgID, updated.BranchID); err == nil {
+		branchName = branch.Name
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": m.poToResponse(updated, supplierName, branchName)})
+}
+
+func (m *Module) bulkUpdateStatus(c *gin.Context) {
+	u := auth.CurrentUser(c)
+	orgID := auth.GetOrgIDForRequest(c, u)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "org context required"})
+		return
+	}
+
+	var req struct {
+		IDs    []string `json:"ids"`
+		Status string   `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.IDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Map frontend status to backend status
+	backendStatus := req.Status
+	switch req.Status {
+	case "DRAFT":
+		backendStatus = "OPEN"
+	case "PENDING":
+		backendStatus = "RECEIVING"
+	case "PARTIAL":
+		backendStatus = "RECEIVING"
+	}
+
+	validStatuses := map[string]bool{
+		"OPEN": true, "RECEIVING": true, "RECEIVED": true, "CANCELLED": true,
+	}
+	if !validStatuses[backendStatus] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
+		return
+	}
+
+	updated := 0
+	for _, id := range req.IDs {
+		patch := bson.M{
+			"status":    backendStatus,
+			"updatedAt": time.Now().UTC(),
+		}
+		_, err := m.deps.Repo.UpdatePurchaseOrderByOrg(c.Request.Context(), orgID, id, patch)
+		if err == nil {
+			updated++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"updated": updated}})
 }

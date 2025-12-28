@@ -29,7 +29,10 @@ func (r *Repo) ReserveStock(ctx context.Context, orgID, branchID, productID stri
 			},
 		},
 		bson.M{
-			"$inc": bson.M{"reserved": qty},
+			"$inc": bson.M{
+				"reserved": qty,
+				"version":  1,
+			},
 			"$set": bson.M{"updatedAt": now()},
 		},
 		options.FindOneAndUpdate().SetReturnDocument(options.After),
@@ -60,7 +63,10 @@ func (r *Repo) ReleaseReservedStock(ctx context.Context, orgID, branchID, produc
 			},
 		},
 		bson.M{
-			"$inc": bson.M{"reserved": -qty},
+			"$inc": bson.M{
+				"reserved": -qty,
+				"version":  1,
+			},
 			"$set": bson.M{"updatedAt": now()},
 		},
 		options.FindOneAndUpdate().SetReturnDocument(options.After),
@@ -93,7 +99,11 @@ func (r *Repo) CommitReservedStock(ctx context.Context, orgID, branchID, product
 			},
 		},
 		bson.M{
-			"$inc": bson.M{"reserved": -qty, "quantity": -qty},
+			"$inc": bson.M{
+				"reserved": -qty,
+				"quantity": -qty,
+				"version":  1,
+			},
 			"$set": bson.M{"updatedAt": now()},
 		},
 		options.FindOneAndUpdate().SetReturnDocument(options.After),
@@ -115,7 +125,11 @@ func (r *Repo) UncommitReservedStock(ctx context.Context, orgID, branchID, produ
 		ctx,
 		bson.M{"_id": StockLevelID(branchID, productID), "orgId": orgID},
 		bson.M{
-			"$inc": bson.M{"reserved": qty, "quantity": qty},
+			"$inc": bson.M{
+				"reserved": qty,
+				"quantity": qty,
+				"version":  1,
+			},
 			"$set": bson.M{"updatedAt": now()},
 		},
 	)

@@ -1,17 +1,14 @@
-import * as React from 'react';
+import * as React from 'react'
+import type { ColumnDef, SortingState, ColumnFiltersState, VisibilityState } from '@tanstack/react-table'
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
   getPaginationRowModel,
   getSortedRowModel,
-  SortingState,
   getFilteredRowModel,
-  ColumnFiltersState,
-  VisibilityState,
-  RowSelectionState,
-} from '@tanstack/react-table';
+} from '@tanstack/react-table'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -19,137 +16,116 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from './table'
+import { Button } from './button'
+import { Input } from './input'
+import { Skeleton } from './skeleton'
+import { EmptyState, type EmptyStatePreset } from './empty-state'
+import { cn } from '@/lib/utils'
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  isLoading?: boolean;
-  pageCount?: number;
-  pageIndex?: number;
-  pageSize?: number;
-  onPaginationChange?: (pageIndex: number, pageSize: number) => void;
-  enableRowSelection?: boolean;
-  onRowSelectionChange?: (rows: TData[]) => void;
-  emptyMessage?: string;
+  columns: ColumnDef<TData, TValue>[]
+  data: TData[]
+  isLoading?: boolean
+  searchPlaceholder?: string
+  searchKey?: string
+  pageSize?: number
+  onRowClick?: (row: TData) => void
+  emptyMessage?: string
+  emptyPreset?: EmptyStatePreset
+  emptyAction?: {
+    label: string
+    onClick: () => void
+  }
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   isLoading = false,
-  pageCount,
-  pageIndex = 0,
+  searchPlaceholder = 'Search...',
+  searchKey,
   pageSize = 10,
-  onPaginationChange,
-  enableRowSelection = false,
-  onRowSelectionChange,
-  emptyMessage = 'No results found.',
+  onRowClick,
+  emptyMessage = 'No results.',
+  emptyPreset = 'general',
+  emptyAction,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
-
-  const selectColumn: ColumnDef<TData, TValue> = {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  };
-
-  const tableColumns = enableRowSelection ? [selectColumn, ...columns] : columns;
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [globalFilter, setGlobalFilter] = React.useState('')
 
   const table = useReactTable({
     data,
-    columns: tableColumns,
+    columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: pageCount === undefined ? getPaginationRowModel() : undefined,
+    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    manualPagination: pageCount !== undefined,
-    pageCount: pageCount,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: 'includesString',
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
+      globalFilter,
+    },
+    initialState: {
       pagination: {
-        pageIndex,
         pageSize,
       },
     },
-  });
-
-  React.useEffect(() => {
-    if (onRowSelectionChange) {
-      const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
-      onRowSelectionChange(selectedRows);
-    }
-  }, [rowSelection, table, onRowSelectionChange]);
-
-  const handlePageChange = (newPageIndex: number) => {
-    if (onPaginationChange) {
-      onPaginationChange(newPageIndex, pageSize);
-    }
-  };
+  })
 
   if (isLoading) {
     return (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {tableColumns.map((_, i) => (
-                <TableHead key={i}>
-                  <Skeleton className="h-4 w-24" />
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: pageSize }).map((_, i) => (
-              <TableRow key={i}>
-                {tableColumns.map((_, j) => (
-                  <TableCell key={j}>
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-[300px]" />
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {columns.map((_, i) => (
+                  <TableHead key={i}>
+                    <Skeleton className="h-4 w-24" />
+                  </TableHead>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {columns.map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="space-y-4">
+      {/* Search */}
+      {searchKey && (
+        <Input
+          placeholder={searchPlaceholder}
+          value={globalFilter ?? ''}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="max-w-sm"
+        />
+      )}
+
+      {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -157,28 +133,9 @@ export function DataTable<TData, TValue>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <div
-                        className={cn(
-                          header.column.getCanSort() &&
-                            'flex cursor-pointer select-none items-center gap-1'
-                        )}
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && (
-                          <>
-                            {header.column.getIsSorted() === 'asc' ? (
-                              <ArrowUp className="h-4 w-4" />
-                            ) : header.column.getIsSorted() === 'desc' ? (
-                              <ArrowDown className="h-4 w-4" />
-                            ) : (
-                              <ArrowUpDown className="h-4 w-4 text-muted-foreground/50" />
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -187,7 +144,12 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className={cn(onRowClick && 'cursor-pointer')}
+                  onClick={() => onRowClick?.(row.original)}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -197,8 +159,14 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={tableColumns.length} className="h-24 text-center">
-                  {emptyMessage}
+                <TableCell colSpan={columns.length} className="h-64">
+                  <EmptyState
+                    preset={globalFilter ? 'search' : emptyPreset}
+                    title={globalFilter ? `No results for "${globalFilter}"` : undefined}
+                    description={globalFilter ? 'Try adjusting your search criteria.' : emptyMessage}
+                    action={!globalFilter && emptyAction ? emptyAction : undefined}
+                    className="py-8"
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -207,57 +175,74 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-2">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {enableRowSelection && (
-            <>
-              {table.getFilteredSelectedRowModel().rows.length} of{' '}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
-            </>
-          )}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}{' '}
+          to{' '}
+          {Math.min(
+            (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+            table.getFilteredRowModel().rows.length
+          )}{' '}
+          of {table.getFilteredRowModel().rows.length} results
         </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">
-              Page {pageIndex + 1} of {pageCount || table.getPageCount()}
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(0)}
-              disabled={pageIndex === 0}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(pageIndex - 1)}
-              disabled={pageIndex === 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(pageIndex + 1)}
-              disabled={pageIndex >= (pageCount || table.getPageCount()) - 1}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange((pageCount || table.getPageCount()) - 1)}
-              disabled={pageIndex >= (pageCount || table.getPageCount()) - 1}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm">
+            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
-  );
+  )
+}
+
+// Sortable header helper
+export function SortableHeader({
+  column,
+  children,
+}: {
+  column: { getIsSorted: () => 'asc' | 'desc' | false; toggleSorting: (desc?: boolean) => void }
+  children: React.ReactNode
+}) {
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      className="-ml-4 h-8"
+    >
+      {children}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  )
 }

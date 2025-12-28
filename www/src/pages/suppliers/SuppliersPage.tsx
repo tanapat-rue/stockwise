@@ -1,175 +1,287 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-  Plus,
-  Search,
-  MoreHorizontal,
-  Mail,
-  Phone,
-  MapPin,
-  Building2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Plus, MoreHorizontal, Pencil, Trash2, Building2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { DataTable, SortableHeader } from '@/components/ui/data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Spinner } from '@/components/ui/spinner';
-import { apiClient } from '@/lib/api-client';
-
-interface Supplier {
-  id: string;
-  name: string;
-  contactName: string;
-  email?: string;
-  phone: string;
-  address?: string;
-  taxId?: string;
-  createdAt: string;
-}
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from '@/features/suppliers'
+import type { Supplier, CreateSupplierRequest } from '@/features/suppliers'
+import { formatCurrency } from '@/lib/utils'
 
 export function SuppliersPage() {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState('')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
+  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['suppliers', search],
-    queryFn: async () => {
-      const response = await apiClient.get<{ data: Supplier[] }>('/suppliers', {
-        search: search || undefined,
-      });
-      return response.data || [];
+  const { data: suppliersData, isLoading } = useSuppliers({ search })
+  const createSupplier = useCreateSupplier()
+  const updateSupplier = useUpdateSupplier()
+  const deleteSupplier = useDeleteSupplier()
+
+  const suppliers = suppliersData?.data || []
+
+  const columns: ColumnDef<Supplier>[] = [
+    {
+      accessorKey: 'code',
+      header: 'Code',
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">{row.getValue('code') || '-'}</span>
+      ),
     },
-  });
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-medium">{row.getValue('name')}</p>
+            {row.original.contactPerson && (
+              <p className="text-sm text-muted-foreground">{row.original.contactPerson}</p>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'phone',
+      header: 'Phone',
+      cell: ({ row }) => row.getValue('phone') || '-',
+    },
+    {
+      accessorKey: 'totalOrders',
+      header: ({ column }) => <SortableHeader column={column}>POs</SortableHeader>,
+    },
+    {
+      accessorKey: 'totalPurchased',
+      header: ({ column }) => <SortableHeader column={column}>Total Purchased</SortableHeader>,
+      cell: ({ row }) => formatCurrency(row.getValue('totalPurchased')),
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEditingSupplier(row.original)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => setDeletingSupplier(row.original)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
-  const suppliers = data || [];
+  const handleCreate = (data: CreateSupplierRequest) => {
+    createSupplier.mutate(data, {
+      onSuccess: () => setIsCreateOpen(false),
+    })
+  }
+
+  const handleUpdate = (data: CreateSupplierRequest) => {
+    if (!editingSupplier) return
+    updateSupplier.mutate(
+      { id: editingSupplier.id, data },
+      { onSuccess: () => setEditingSupplier(null) }
+    )
+  }
+
+  const handleDelete = () => {
+    if (!deletingSupplier) return
+    deleteSupplier.mutate(deletingSupplier.id, {
+      onSuccess: () => setDeletingSupplier(null),
+    })
+  }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Suppliers</h1>
-          <p className="text-muted-foreground">Manage your supplier relationships</p>
+          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
+          <p className="text-muted-foreground">Manage your supplier network</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Supplier
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{suppliers.length}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search suppliers..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
+      {/* Search */}
+      <Input
+        placeholder="Search suppliers..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       {/* Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead>Contact Person</TableHead>
-              <TableHead>Contact Info</TableHead>
-              <TableHead>Tax ID</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  <Spinner className="mx-auto" />
-                </TableCell>
-              </TableRow>
-            ) : suppliers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No suppliers found
-                </TableCell>
-              </TableRow>
-            ) : (
-              suppliers.map((supplier) => (
-                <TableRow key={supplier.id}>
-                  <TableCell>
-                    <div className="font-medium">{supplier.name}</div>
-                    {supplier.address && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {supplier.address}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>{supplier.contactName}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {supplier.email && (
-                        <div className="flex items-center gap-1 text-sm">
-                          <Mail className="h-3 w-3" />
-                          {supplier.email}
-                        </div>
-                      )}
-                      {supplier.phone && (
-                        <div className="flex items-center gap-1 text-sm">
-                          <Phone className="h-3 w-3" />
-                          {supplier.phone}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{supplier.taxId || '-'}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={suppliers}
+        isLoading={isLoading}
+        emptyPreset="suppliers"
+        emptyMessage="Add suppliers to manage your product sourcing."
+      />
+
+      {/* Create/Edit Dialog */}
+      <SupplierFormDialog
+        open={isCreateOpen || !!editingSupplier}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreateOpen(false)
+            setEditingSupplier(null)
+          }
+        }}
+        supplier={editingSupplier}
+        onSubmit={editingSupplier ? handleUpdate : handleCreate}
+        isLoading={createSupplier.isPending || updateSupplier.isPending}
+      />
+
+      {/* Delete Confirmation */}
+      <Dialog open={!!deletingSupplier} onOpenChange={() => setDeletingSupplier(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Supplier</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deletingSupplier?.name}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingSupplier(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              loading={deleteSupplier.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
+}
+
+function SupplierFormDialog({
+  open,
+  onOpenChange,
+  supplier,
+  onSubmit,
+  isLoading,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  supplier: Supplier | null
+  onSubmit: (data: CreateSupplierRequest) => void
+  isLoading: boolean
+}) {
+  const [formData, setFormData] = useState<CreateSupplierRequest>({
+    name: supplier?.name || '',
+    email: supplier?.email || '',
+    phone: supplier?.phone || '',
+    address: supplier?.address || '',
+    contactPerson: supplier?.contactPerson || '',
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{supplier ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Company Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contactPerson">Contact Person</Label>
+            <Input
+              id="contactPerson"
+              value={formData.contactPerson}
+              onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isLoading}>
+              {supplier ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
 }

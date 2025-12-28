@@ -1,371 +1,211 @@
-import { useState } from 'react';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { useState } from 'react'
 import {
   BarChart3,
   TrendingUp,
   Package,
-  Users,
-  DollarSign,
+  ShoppingCart,
   Download,
   Calendar,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { PageHeader } from '@/components/ui/page-header';
-import {
-  useSalesSummary,
-  useSalesByProduct,
-  useSalesByCategory,
-  useInventoryValue,
-  useLowStockReport,
-  useCustomerSummary,
-  useTopCustomers,
-} from '@/features/reports';
-import { formatCurrency } from '@/lib/utils';
-
-type DatePreset = '7d' | '30d' | 'month' | 'quarter';
+} from '@/components/ui/select'
+import { StatCard } from '@/components/ui/stat-card'
+import { formatCurrency } from '@/lib/utils'
 
 export function ReportsPage() {
-  const [datePreset, setDatePreset] = useState<DatePreset>('30d');
+  const [dateRange, setDateRange] = useState('month')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
-  // Calculate date range
-  const getDateRange = () => {
-    const today = new Date();
-    switch (datePreset) {
-      case '7d':
-        return {
-          startDate: format(subDays(today, 7), 'yyyy-MM-dd'),
-          endDate: format(today, 'yyyy-MM-dd'),
-        };
-      case '30d':
-        return {
-          startDate: format(subDays(today, 30), 'yyyy-MM-dd'),
-          endDate: format(today, 'yyyy-MM-dd'),
-        };
-      case 'month':
-        return {
-          startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
-          endDate: format(endOfMonth(today), 'yyyy-MM-dd'),
-        };
-      case 'quarter':
-        return {
-          startDate: format(subDays(today, 90), 'yyyy-MM-dd'),
-          endDate: format(today, 'yyyy-MM-dd'),
-        };
-    }
-  };
+  // Mock data - replace with actual API calls
+  const stats = {
+    totalRevenue: 4589000,
+    totalOrders: 156,
+    totalProducts: 1247,
+    averageOrderValue: 29417,
+  }
 
-  const dateRange = getDateRange();
-
-  // Data
-  const { data: salesSummary } = useSalesSummary(dateRange);
-  const { data: topProducts } = useSalesByProduct(dateRange, 10);
-  const { data: salesByCategory } = useSalesByCategory(dateRange);
-  const { data: inventoryValue } = useInventoryValue();
-  const { data: lowStock } = useLowStockReport();
-  const { data: customerSummary } = useCustomerSummary(dateRange);
-  const { data: topCustomers } = useTopCustomers(dateRange, 10);
+  const topProducts = [
+    { name: 'Widget A', sku: 'WID-001', sold: 245, revenue: 612500 },
+    { name: 'Gadget B', sku: 'GAD-002', sold: 189, revenue: 567000 },
+    { name: 'Component C', sku: 'COM-003', sold: 156, revenue: 390000 },
+    { name: 'Device D', sku: 'DEV-004', sold: 134, revenue: 335000 },
+    { name: 'Part E', sku: 'PAR-005', sold: 98, revenue: 245000 },
+  ]
 
   return (
-    <div className="p-6 space-y-6">
-      <PageHeader
-        title="Reports"
-        description="Business analytics and insights"
-        actions={
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <p className="text-muted-foreground">Analyze your business performance</p>
+        </div>
+        <Button variant="outline">
+          <Download className="mr-2 h-4 w-4" />
+          Export
+        </Button>
+      </div>
+
+      {/* Date Range Filter */}
+      <Card>
+        <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
-              <SelectTrigger className="w-[150px]">
-                <Calendar className="mr-2 h-4 w-4" />
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Label>Period:</Label>
+            </div>
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="month">This month</SelectItem>
-                <SelectItem value="quarter">Last quarter</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="quarter">This Quarter</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
+            {dateRange === 'custom' && (
+              <>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-40"
+                />
+                <span>to</span>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-40"
+                />
+              </>
+            )}
           </div>
-        }
-      />
+        </CardContent>
+      </Card>
 
-      <Tabs defaultValue="sales" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="sales" className="gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Sales
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="gap-2">
-            <Package className="h-4 w-4" />
-            Inventory
-          </TabsTrigger>
-          <TabsTrigger value="customers" className="gap-2">
-            <Users className="h-4 w-4" />
-            Customers
-          </TabsTrigger>
-        </TabsList>
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Revenue"
+          value={formatCurrency(stats.totalRevenue)}
+          icon={<TrendingUp className="h-4 w-4" />}
+          description="This period"
+        />
+        <StatCard
+          title="Total Orders"
+          value={stats.totalOrders}
+          icon={<ShoppingCart className="h-4 w-4" />}
+          description="This period"
+        />
+        <StatCard
+          title="Products Sold"
+          value={stats.totalProducts}
+          icon={<Package className="h-4 w-4" />}
+          description="Unique items"
+        />
+        <StatCard
+          title="Avg Order Value"
+          value={formatCurrency(stats.averageOrderValue)}
+          icon={<BarChart3 className="h-4 w-4" />}
+          description="This period"
+        />
+      </div>
 
-        {/* Sales Tab */}
-        <TabsContent value="sales" className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(salesSummary?.totalRevenue || 0)}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(salesSummary?.grossProfit || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {((salesSummary?.profitMargin || 0) * 100).toFixed(1)}% margin
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{salesSummary?.totalOrders || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(salesSummary?.avgOrderValue || 0)}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Top Products & Categories */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Products</CardTitle>
-                <CardDescription>Best selling products by revenue</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topProducts?.slice(0, 5).map((product, index) => (
-                    <div key={product.productId} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-muted-foreground w-4">{index + 1}.</span>
-                        <div>
-                          <div className="font-medium">{product.productName}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {product.quantitySold} sold
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(product.revenue)}</div>
-                      </div>
-                    </div>
-                  )) || (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No sales data available
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales by Category</CardTitle>
-                <CardDescription>Revenue breakdown by category</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {salesByCategory?.slice(0, 5).map((category) => (
-                    <div key={category.categoryId} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{category.categoryName}</span>
-                        <span>{formatCurrency(category.revenue)}</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{ width: `${category.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  )) || (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No sales data available
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Inventory Tab */}
-        <TabsContent value="inventory" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Inventory Value by Branch</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {inventoryValue?.map((branch) => (
-                    <div key={branch.branchId} className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{branch.branchName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {branch.totalProducts} products
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(branch.totalValue)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {branch.totalQuantity} units
-                        </div>
-                      </div>
-                    </div>
-                  )) || (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No inventory data available
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Low Stock Alert</CardTitle>
-                <CardDescription>Items below reorder point</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {lowStock?.slice(0, 5).map((item) => (
-                    <div key={item.productId} className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{item.productName}</div>
-                        <div className="text-sm text-muted-foreground">{item.productSku}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-destructive">{item.currentStock}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Reorder at {item.reorderPoint}
-                        </div>
-                      </div>
-                    </div>
-                  )) || (
-                    <div className="text-center py-8 text-muted-foreground">
-                      All stock levels are healthy
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Customers Tab */}
-        <TabsContent value="customers" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{customerSummary?.totalCustomers || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">New Customers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{customerSummary?.newCustomers || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Repeat Customers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{customerSummary?.repeatCustomers || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Customer Value</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(customerSummary?.avgCustomerValue || 0)}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Customers</CardTitle>
-              <CardDescription>Highest spending customers</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {topCustomers?.map((customer, index) => (
-                  <div key={customer.customerId} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-muted-foreground w-4">{index + 1}.</span>
-                      <div>
-                        <div className="font-medium">{customer.customerName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {customer.orderCount} orders
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{formatCurrency(customer.totalSpent)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Last order: {format(new Date(customer.lastOrderDate), 'MMM d')}
-                      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Top Products */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Selling Products</CardTitle>
+            <CardDescription>Best performers this period</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {topProducts.map((product, index) => (
+                <div
+                  key={product.sku}
+                  className="flex items-center justify-between py-2 border-b last:border-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
+                      {index + 1}
+                    </span>
+                    <div>
+                      <p className="font-medium">{product.name}</p>
+                      <p className="text-sm text-muted-foreground">{product.sku}</p>
                     </div>
                   </div>
-                )) || (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No customer data available
+                  <div className="text-right">
+                    <p className="font-medium">{formatCurrency(product.revenue)}</p>
+                    <p className="text-sm text-muted-foreground">{product.sold} sold</p>
                   </div>
-                )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sales Chart Placeholder */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Sales Trend</CardTitle>
+            <CardDescription>Revenue over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed">
+              <div className="text-center text-muted-foreground">
+                <BarChart3 className="mx-auto h-12 w-12 mb-2" />
+                <p>Chart visualization</p>
+                <p className="text-sm">Coming soon</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Report Types */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Available Reports</CardTitle>
+          <CardDescription>Download detailed reports</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { title: 'Sales Report', description: 'Order and revenue details' },
+              { title: 'Inventory Report', description: 'Stock levels and movements' },
+              { title: 'Customer Report', description: 'Customer activity summary' },
+              { title: 'Purchase Report', description: 'Supplier orders and costs' },
+            ].map((report) => (
+              <div
+                key={report.title}
+                className="rounded-lg border p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+              >
+                <p className="font-medium">{report.title}</p>
+                <p className="text-sm text-muted-foreground">{report.description}</p>
+                <Button variant="link" className="mt-2 p-0 h-auto">
+                  <Download className="mr-1 h-3 w-3" />
+                  Download
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

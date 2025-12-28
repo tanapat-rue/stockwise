@@ -142,7 +142,23 @@ func (r *Repo) UpsertStockLevel(ctx context.Context, s models.StockLevel) (model
 	res := r.col(ColStockLevels).FindOneAndUpdate(
 		ctx,
 		bson.M{"_id": s.ID, "orgId": s.OrgID},
-		bson.M{"$set": s},
+		bson.M{
+			"$set": bson.M{
+				"quantity":    s.Quantity,
+				"reserved":    s.Reserved,
+				"minStock":    s.MinStock,
+				"binLocation": s.BinLocation,
+				"averageCost": s.AverageCost,
+				"updatedAt":   s.UpdatedAt,
+			},
+			"$inc": bson.M{"version": 1},
+			"$setOnInsert": bson.M{
+				"_id":       s.ID,
+				"orgId":     s.OrgID,
+				"branchId":  s.BranchID,
+				"productId": s.ProductID,
+			},
+		},
 		options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After),
 	)
 	var out models.StockLevel
@@ -157,7 +173,10 @@ func (r *Repo) PatchStockLevel(ctx context.Context, orgID, branchID, productID s
 	res := r.col(ColStockLevels).FindOneAndUpdate(
 		ctx,
 		bson.M{"_id": StockLevelID(branchID, productID), "orgId": orgID},
-		bson.M{"$set": patch},
+		bson.M{
+			"$set": patch,
+			"$inc": bson.M{"version": 1},
+		},
 		options.FindOneAndUpdate().SetReturnDocument(options.After),
 	)
 	var out models.StockLevel
@@ -181,7 +200,10 @@ func (r *Repo) AdjustStock(ctx context.Context, orgID, branchID, productID strin
 				"minStock":  5,
 				"reserved":  0,
 			},
-			"$inc": bson.M{"quantity": delta},
+			"$inc": bson.M{
+				"quantity": delta,
+				"version":  1,
+			},
 			"$set": bson.M{"updatedAt": now()},
 		},
 		options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After),

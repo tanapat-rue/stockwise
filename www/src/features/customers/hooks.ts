@@ -1,84 +1,67 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customersApi } from './api';
-import type { CustomerFormValues } from './types';
-import { toast } from '@/components/ui/toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { customersApi } from './api'
+import { queryKeys } from '@/lib/query-client'
+import type { CustomerListParams, CreateCustomerRequest, UpdateCustomerRequest } from './types'
 
-const customerKeys = {
-  all: ['customers'] as const,
-  list: () => [...customerKeys.all, 'list'] as const,
-  detail: (id: string) => [...customerKeys.all, 'detail', id] as const,
-  search: (query: string) => [...customerKeys.all, 'search', query] as const,
-};
-
-export function useCustomers() {
+export function useCustomers(params?: CustomerListParams) {
   return useQuery({
-    queryKey: customerKeys.list(),
-    queryFn: () => customersApi.list(),
-    select: (data) => data.data,
-  });
+    queryKey: queryKeys.customers.list(params as Record<string, unknown>),
+    queryFn: () => customersApi.list(params),
+  })
 }
 
 export function useCustomer(id: string) {
   return useQuery({
-    queryKey: customerKeys.detail(id),
+    queryKey: queryKeys.customers.detail(id),
     queryFn: () => customersApi.get(id),
     enabled: !!id,
-    select: (data) => data.data,
-  });
-}
-
-export function useSearchCustomers(query: string) {
-  return useQuery({
-    queryKey: customerKeys.search(query),
-    queryFn: () => customersApi.search(query),
-    enabled: query.length >= 2,
-    select: (data) => data.data,
-  });
+  })
 }
 
 export function useCreateCustomer() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: CustomerFormValues) => customersApi.create(data),
+    mutationFn: (data: CreateCustomerRequest) => customersApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.all });
-      toast.success('Customer created successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
+      toast.success('Customer created successfully')
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create customer');
+      toast.error(error.message || 'Failed to create customer')
     },
-  });
+  })
 }
 
 export function useUpdateCustomer() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CustomerFormValues> }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateCustomerRequest }) =>
       customersApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.all });
-      queryClient.invalidateQueries({ queryKey: customerKeys.detail(variables.id) });
-      toast.success('Customer updated successfully');
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.detail(id) })
+      toast.success('Customer updated successfully')
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update customer');
+      toast.error(error.message || 'Failed to update customer')
     },
-  });
+  })
 }
 
 export function useDeleteCustomer() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (id: string) => customersApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.all });
-      toast.success('Customer deleted successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
+      toast.success('Customer deleted successfully')
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete customer');
+      toast.error(error.message || 'Failed to delete customer')
     },
-  });
+  })
 }

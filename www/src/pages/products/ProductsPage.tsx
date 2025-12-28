@@ -1,229 +1,70 @@
-import { useState, useMemo } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ColumnDef } from '@tanstack/react-table';
-import {
-  Plus,
-  Search,
-  Package,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Eye,
-  Archive,
-  CheckCircle,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { PageHeader } from '@/components/ui/page-header';
-import { DataTable } from '@/components/ui/data-table';
-import { Badge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useState, useEffect } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Plus, MoreHorizontal, Pencil, Trash2, Package } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { DataTable, SortableHeader } from '@/components/ui/data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { StatusBadge, productStatusMap } from '@/components/ui/status-badge';
-import { formatCurrency } from '@/lib/utils';
-import { useProducts, useDeleteProduct, useBulkUpdateProductStatus, type Product, type ProductStatus } from '@/features/products';
-import { useCategoryTree } from '@/features/categories';
-import { debounce } from '@/lib/utils';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/features/products'
+import type { Product, CreateProductRequest } from '@/features/products'
+import { formatCurrency } from '@/lib/utils'
 
 export function ProductsPage() {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState('')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
 
-  // Filters
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const categoryId = searchParams.get('categoryId') || undefined;
-  const status = (searchParams.get('status') as ProductStatus) || undefined;
-  const page = parseInt(searchParams.get('page') || '0', 10);
+  const { data: productsData, isLoading } = useProducts({ search })
+  const createProduct = useCreateProduct()
+  const updateProduct = useUpdateProduct()
+  const deleteProduct = useDeleteProduct()
 
-  // Data
-  const { data: productsData, isLoading } = useProducts({
-    search: search || undefined,
-    categoryId,
-    status,
-    page,
-    limit: 20,
-  });
-  const { data: categories } = useCategoryTree();
-  const deleteProduct = useDeleteProduct();
-  const bulkUpdateStatus = useBulkUpdateProductStatus();
+  const products = productsData?.data || []
 
-  // Selected rows for bulk actions
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-
-  // Debounced search
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((value: string) => {
-        const params = new URLSearchParams(searchParams);
-        if (value) {
-          params.set('search', value);
-        } else {
-          params.delete('search');
-        }
-        params.set('page', '0');
-        setSearchParams(params);
-      }, 300),
-    [searchParams, setSearchParams]
-  );
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    debouncedSearch(value);
-  };
-
-  const handleFilterChange = (key: string, value: string | undefined) => {
-    const params = new URLSearchParams(searchParams);
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-    params.set('page', '0');
-    setSearchParams(params);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('page', newPage.toString());
-    setSearchParams(params);
-  };
-
-  const handleDelete = (product: Product) => {
-    setProductToDelete(product);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (productToDelete) {
-      deleteProduct.mutate(productToDelete.id, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setProductToDelete(null);
-        },
-      });
-    }
-  };
-
-  const handleBulkStatusUpdate = (status: ProductStatus) => {
-    if (selectedProducts.length > 0) {
-      bulkUpdateStatus.mutate(
-        { ids: selectedProducts.map((p) => p.id), status },
-        {
-          onSuccess: () => setSelectedProducts([]),
-        }
-      );
-    }
-  };
-
-  // Table columns
   const columns: ColumnDef<Product>[] = [
     {
+      accessorKey: 'sku',
+      header: ({ column }) => <SortableHeader column={column}>SKU</SortableHeader>,
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">{row.getValue('sku')}</span>
+      ),
+    },
+    {
       accessorKey: 'name',
-      header: 'Product',
+      header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-            {row.original.imageKey ? (
-              <img
-                src={`/api/products/${row.original.id}/image`}
-                alt={row.original.name}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <Package className="h-5 w-5 text-muted-foreground" />
-            )}
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+            <Package className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <Link
-              to={`/products/${row.original.id}`}
-              className="font-medium hover:underline"
-            >
-              {row.original.name}
-            </Link>
-            <div className="text-sm text-muted-foreground">{row.original.sku}</div>
+            <p className="font-medium">{row.getValue('name')}</p>
+            {row.original.category && (
+              <p className="text-sm text-muted-foreground">{row.original.category}</p>
+            )}
           </div>
         </div>
       ),
     },
     {
-      accessorKey: 'categoryName',
-      header: 'Category',
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.categoryName || '—'}
-        </span>
-      ),
-    },
-    {
       accessorKey: 'price',
-      header: 'Price',
-      cell: ({ row }) => formatCurrency(row.original.price),
-    },
-    {
-      accessorKey: 'cost',
-      header: 'Cost',
-      cell: ({ row }) => formatCurrency(row.original.cost),
-    },
-    {
-      accessorKey: 'totalStock',
-      header: 'Stock',
-      cell: ({ row }) => {
-        const stock = row.original.totalStock ?? 0;
-        return (
-          <span className={stock <= 0 ? 'text-destructive' : undefined}>
-            {stock} {row.original.unit}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: 'hasVariants',
-      header: 'Variants',
-      cell: ({ row }) =>
-        row.original.hasVariants ? (
-          <Badge variant="secondary">
-            {row.original.variants?.length || 0} variants
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => {
-        const statusInfo = productStatusMap[row.original.status];
-        return (
-          <StatusBadge status={statusInfo?.status || 'default'}>
-            {statusInfo?.label || row.original.status}
-          </StatusBadge>
-        );
-      },
+      header: ({ column }) => <SortableHeader column={column}>Price</SortableHeader>,
+      cell: ({ row }) => formatCurrency(row.getValue('price')),
     },
     {
       id: 'actions',
@@ -235,18 +76,13 @@ export function ProductsPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate(`/products/${row.original.id}`)}>
-              <Eye className="mr-2 h-4 w-4" />
-              View
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/products/${row.original.id}/edit`)}>
+            <DropdownMenuItem onClick={() => setEditingProduct(row.original)}>
               <Pencil className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => handleDelete(row.original)}
-              className="text-destructive focus:text-destructive"
+              className="text-destructive"
+              onClick={() => setDeletingProduct(row.original)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
@@ -255,152 +91,226 @@ export function ProductsPage() {
         </DropdownMenu>
       ),
     },
-  ];
+  ]
+
+  const handleCreate = (data: CreateProductRequest) => {
+    createProduct.mutate(data, {
+      onSuccess: () => setIsCreateOpen(false),
+    })
+  }
+
+  const handleUpdate = (data: CreateProductRequest) => {
+    if (!editingProduct) return
+    updateProduct.mutate(
+      { id: editingProduct.id, data },
+      { onSuccess: () => setEditingProduct(null) }
+    )
+  }
+
+  const handleDelete = () => {
+    if (!deletingProduct) return
+    deleteProduct.mutate(deletingProduct.id, {
+      onSuccess: () => setDeletingProduct(null),
+    })
+  }
 
   return (
-    <div className="p-6">
-      <PageHeader
-        title="Products"
-        description="Manage your product catalog"
-        actions={
-          <Button onClick={() => navigate('/products/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Button>
-        }
-      />
-
-      {/* Filters */}
-      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9"
-          />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
-
-        <Select
-          value={categoryId || 'all'}
-          onValueChange={(value) =>
-            handleFilterChange('categoryId', value === 'all' ? undefined : value)
-          }
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories?.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={status || 'all'}
-          onValueChange={(value) =>
-            handleFilterChange('status', value === 'all' ? undefined : value)
-          }
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="DRAFT">Draft</SelectItem>
-            <SelectItem value="ARCHIVED">Archived</SelectItem>
-          </SelectContent>
-        </Select>
+        <Button onClick={() => setIsCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Product
+        </Button>
       </div>
 
-      {/* Bulk Actions */}
-      {selectedProducts.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border bg-muted/50 p-3">
-          <span className="text-sm font-medium">
-            {selectedProducts.length} selected
-          </span>
-          <div className="ml-auto flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleBulkStatusUpdate('ACTIVE')}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Set Active
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleBulkStatusUpdate('ARCHIVED')}
-            >
-              <Archive className="mr-2 h-4 w-4" />
-              Archive
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Search */}
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
 
       {/* Table */}
-      {productsData?.data && productsData.data.length > 0 ? (
-        <DataTable
-          columns={columns}
-          data={productsData.data}
-          isLoading={isLoading}
-          pageCount={productsData.meta.totalPages}
-          pageIndex={page}
-          pageSize={20}
-          onPaginationChange={(newPage) => handlePageChange(newPage)}
-          enableRowSelection
-          onRowSelectionChange={setSelectedProducts}
-        />
-      ) : !isLoading ? (
-        <EmptyState
-          icon={Package}
-          title="No products yet"
-          description="Get started by adding your first product to the catalog"
-          action={
-            <Button onClick={() => navigate('/products/new')}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          }
-        />
-      ) : (
-        <DataTable
-          columns={columns}
-          data={[]}
-          isLoading={true}
-          pageSize={20}
-        />
-      )}
+      <DataTable
+        columns={columns}
+        data={products}
+        isLoading={isLoading}
+        emptyPreset="products"
+        emptyMessage="Get started by adding your first product to the catalog."
+      />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Product</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{productToDelete?.name}"? This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      {/* Create/Edit Dialog */}
+      <ProductFormDialog
+        open={isCreateOpen || !!editingProduct}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreateOpen(false)
+            setEditingProduct(null)
+          }
+        }}
+        product={editingProduct}
+        onSubmit={editingProduct ? handleUpdate : handleCreate}
+        isLoading={createProduct.isPending || updateProduct.isPending}
+      />
+
+      {/* Delete Confirmation */}
+      <Dialog open={!!deletingProduct} onOpenChange={() => setDeletingProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Product</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deletingProduct?.name}"? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingProduct(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              loading={deleteProduct.isPending}
             >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
+}
+
+// Product Form Dialog Component
+function ProductFormDialog({
+  open,
+  onOpenChange,
+  product,
+  onSubmit,
+  isLoading,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  product: Product | null
+  onSubmit: (data: CreateProductRequest) => void
+  isLoading: boolean
+}) {
+  const [formData, setFormData] = useState<CreateProductRequest>({
+    sku: '',
+    name: '',
+    description: '',
+    category: '',
+    price: 0,
+  })
+
+  // Reset form when product changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      if (product) {
+        setFormData({
+          sku: product.sku,
+          name: product.name,
+          description: product.description || '',
+          category: product.category || '',
+          price: product.price,
+        })
+      } else {
+        setFormData({
+          sku: '',
+          name: '',
+          description: '',
+          category: '',
+          price: 0,
+        })
+      }
+    }
+  }, [open, product])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{product ? 'Edit Product' : 'Create Product'}</DialogTitle>
+          <DialogDescription>
+            {product ? 'Update the product details below.' : 'Add a new product to your catalog.'}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="sku">SKU</Label>
+            <Input
+              id="sku"
+              value={formData.sku}
+              onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              placeholder="PROD-001"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Product Name"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              value={formData.category || ''}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              placeholder="Electronics, Clothing, etc."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="price">Price (Baht)</Label>
+            <Input
+              id="price"
+              type="number"
+              step="0.01"
+              value={formData.price / 100}
+              onChange={(e) =>
+                setFormData({ ...formData, price: Math.round(parseFloat(e.target.value || '0') * 100) })
+              }
+              placeholder="0.00"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              value={formData.description || ''}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Product description..."
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isLoading}>
+              {product ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
 }

@@ -1,28 +1,23 @@
-import { apiClient } from '@/lib/api-client';
-import type { Customer, CustomerFormValues, CustomersResponse } from './types';
+import { apiClient } from '@/lib/api-client'
+import type {
+  Customer,
+  CustomerListParams,
+  CustomerListResponse,
+  CreateCustomerRequest,
+  UpdateCustomerRequest,
+} from './types'
 
 export const customersApi = {
-  async list(): Promise<CustomersResponse> {
-    return apiClient.get('/customers');
-  },
+  list: (params?: CustomerListParams) =>
+    apiClient.get<CustomerListResponse>('/api/customers', params as Record<string, unknown>),
 
-  async get(id: string): Promise<{ data: Customer }> {
-    return apiClient.get(`/customers/${id}`);
-  },
+  get: (id: string) => apiClient.get<{ data: Customer }>(`/api/customers/${id}`),
 
-  async create(data: CustomerFormValues): Promise<{ data: Customer }> {
-    return apiClient.post('/customers', data);
-  },
+  create: (data: CreateCustomerRequest) =>
+    apiClient.post<{ data: Customer }>('/api/customers', data),
 
-  async update(id: string, data: Partial<CustomerFormValues>): Promise<{ data: Customer }> {
-    return apiClient.patch(`/customers/${id}`, data);
-  },
+  update: (id: string, data: UpdateCustomerRequest) =>
+    apiClient.patch<{ data: Customer }>(`/api/customers/${id}`, data),
 
-  async delete(id: string): Promise<void> {
-    return apiClient.delete(`/customers/${id}`);
-  },
-
-  async search(query: string): Promise<{ data: Customer[] }> {
-    return apiClient.get('/customers', { search: query });
-  },
-};
+  delete: (id: string) => apiClient.delete(`/api/customers/${id}`),
+}

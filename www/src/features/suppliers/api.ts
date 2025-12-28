@@ -1,24 +1,23 @@
-import { apiClient } from '@/lib/api-client';
-import type { Supplier, SupplierFormValues, SuppliersResponse } from './types';
+import { apiClient } from '@/lib/api-client'
+import type {
+  Supplier,
+  SupplierListParams,
+  SupplierListResponse,
+  CreateSupplierRequest,
+  UpdateSupplierRequest,
+} from './types'
 
 export const suppliersApi = {
-  async list(): Promise<SuppliersResponse> {
-    return apiClient.get('/suppliers');
-  },
+  list: (params?: SupplierListParams) =>
+    apiClient.get<SupplierListResponse>('/api/suppliers', params as Record<string, unknown>),
 
-  async get(id: string): Promise<{ data: Supplier }> {
-    return apiClient.get(`/suppliers/${id}`);
-  },
+  get: (id: string) => apiClient.get<{ data: Supplier }>(`/api/suppliers/${id}`),
 
-  async create(data: SupplierFormValues): Promise<{ data: Supplier }> {
-    return apiClient.post('/suppliers', data);
-  },
+  create: (data: CreateSupplierRequest) =>
+    apiClient.post<{ data: Supplier }>('/api/suppliers', data),
 
-  async update(id: string, data: Partial<SupplierFormValues>): Promise<{ data: Supplier }> {
-    return apiClient.patch(`/suppliers/${id}`, data);
-  },
+  update: (id: string, data: UpdateSupplierRequest) =>
+    apiClient.patch<{ data: Supplier }>(`/api/suppliers/${id}`, data),
 
-  async delete(id: string): Promise<void> {
-    return apiClient.delete(`/suppliers/${id}`);
-  },
-};
+  delete: (id: string) => apiClient.delete(`/api/suppliers/${id}`),
+}

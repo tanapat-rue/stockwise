@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 type Role string
 
@@ -87,6 +91,14 @@ type Category struct {
 	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
 }
 
+// CostingMethod defines how COGS is calculated
+type CostingMethod string
+
+const (
+	CostingMethodFIFO          CostingMethod = "FIFO"
+	CostingMethodMovingAverage CostingMethod = "MOVING_AVERAGE"
+)
+
 type Product struct {
 	ID         string `bson:"_id" json:"id"`
 	OrgID      string `bson:"orgId" json:"orgId"`
@@ -103,6 +115,11 @@ type Product struct {
 	WeightGram int    `bson:"weightGram,omitempty" json:"weight,omitempty"`
 	Dimensions string `bson:"dimensions,omitempty" json:"dimensions,omitempty"`
 
+	// Costing configuration
+	CostingMethod CostingMethod `bson:"costingMethod,omitempty" json:"costingMethod,omitempty"`
+	AverageCost   int64         `bson:"averageCost,omitempty" json:"averageCost,omitempty"`
+	TotalQuantity int           `bson:"totalQuantity,omitempty" json:"totalQuantity,omitempty"`
+
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
 	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
 }
@@ -117,6 +134,12 @@ type StockLevel struct {
 	Reserved    int    `bson:"reserved" json:"reserved"`
 	MinStock    int    `bson:"minStock" json:"minStock"`
 	BinLocation string `bson:"binLocation,omitempty" json:"binLocation,omitempty"`
+
+	// For moving average at branch level
+	AverageCost int64 `bson:"averageCost,omitempty" json:"averageCost,omitempty"`
+
+	// Optimistic locking version
+	Version int `bson:"version" json:"version"`
 
 	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
 }
@@ -177,6 +200,7 @@ type PurchaseOrder struct {
 	DiscountAmount int64   `bson:"discountAmount,omitempty" json:"discountAmount,omitempty"`
 	TaxRate        float64 `bson:"taxRate,omitempty" json:"taxRate,omitempty"`
 	ShippingCost   int64   `bson:"shippingCost,omitempty" json:"shippingCost,omitempty"`
+	PaidAmount     int64   `bson:"paidAmount,omitempty" json:"paidAmount,omitempty"`
 
 	// Notes and shipping
 	Note            string `bson:"note,omitempty" json:"note,omitempty"`
@@ -192,9 +216,9 @@ type PurchaseOrder struct {
 }
 
 type InventoryLot struct {
-	ID       string `bson:"_id" json:"id"`
-	OrgID    string `bson:"orgId" json:"orgId"`
-	BranchID string `bson:"branchId" json:"branchId"`
+	ID        string `bson:"_id" json:"id"`
+	OrgID     string `bson:"orgId" json:"orgId"`
+	BranchID  string `bson:"branchId" json:"branchId"`
 	ProductID string `bson:"productId" json:"productId"`
 
 	// Source describes where this lot came from (e.g. "PO", "ADJUSTMENT", "RETURN").
@@ -206,6 +230,9 @@ type InventoryLot struct {
 	UnitCost     int64 `bson:"unitCost" json:"unitCost"`
 	QtyReceived  int   `bson:"qtyReceived" json:"qtyReceived"`
 	QtyRemaining int   `bson:"qtyRemaining" json:"qtyRemaining"`
+
+	// Optimistic locking version
+	Version int `bson:"version" json:"version"`
 
 	ReceivedAt time.Time `bson:"receivedAt" json:"receivedAt"`
 
@@ -340,4 +367,176 @@ type StockTransfer struct {
 
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
 	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
+}
+
+// ==================== RETURNS/RMA ====================
+
+// ReturnType distinguishes customer vs supplier returns
+type ReturnType string
+
+const (
+	ReturnTypeCustomer ReturnType = "CUSTOMER"
+	ReturnTypeSupplier ReturnType = "SUPPLIER"
+)
+
+// ReturnStatus tracks the return lifecycle
+type ReturnStatus string
+
+const (
+	ReturnStatusRequested ReturnStatus = "REQUESTED"
+	ReturnStatusApproved  ReturnStatus = "APPROVED"
+	ReturnStatusRejected  ReturnStatus = "REJECTED"
+	ReturnStatusReceived  ReturnStatus = "RECEIVED"  // Customer return received back
+	ReturnStatusShipped   ReturnStatus = "SHIPPED"   // Supplier return shipped out
+	ReturnStatusCompleted ReturnStatus = "COMPLETED"
+	ReturnStatusCancelled ReturnStatus = "CANCELLED"
+)
+
+// ReturnReason categorizes why items are returned
+type ReturnReason string
+
+const (
+	ReturnReasonDefective      ReturnReason = "DEFECTIVE"
+	ReturnReasonWrongItem      ReturnReason = "WRONG_ITEM"
+	ReturnReasonNotAsDescribed ReturnReason = "NOT_AS_DESCRIBED"
+	ReturnReasonChangedMind    ReturnReason = "CHANGED_MIND"
+	ReturnReasonDamaged        ReturnReason = "DAMAGED"
+	ReturnReasonQuality        ReturnReason = "QUALITY"
+	ReturnReasonOther          ReturnReason = "OTHER"
+)
+
+// ItemCondition describes the state of returned items
+type ItemCondition string
+
+const (
+	ConditionNew        ItemCondition = "NEW"
+	ConditionLikeNew    ItemCondition = "LIKE_NEW"
+	ConditionUsed       ItemCondition = "USED"
+	ConditionDamaged    ItemCondition = "DAMAGED"
+	ConditionUnsellable ItemCondition = "UNSELLABLE"
+)
+
+// ReturnResolution specifies how the return will be resolved
+type ReturnResolution string
+
+const (
+	ResolutionRefund   ReturnResolution = "REFUND"
+	ResolutionExchange ReturnResolution = "EXCHANGE"
+	ResolutionCredit   ReturnResolution = "CREDIT"
+	ResolutionReplace  ReturnResolution = "REPLACE"
+)
+
+// ReturnItem represents a single item in a return request
+type ReturnItem struct {
+	ProductID   string        `bson:"productId" json:"productId"`
+	ProductName string        `bson:"productName" json:"productName"`
+	ProductSKU  string        `bson:"productSku,omitempty" json:"productSku,omitempty"`
+	Quantity    int           `bson:"quantity" json:"quantity"`
+	QtyReceived int           `bson:"qtyReceived,omitempty" json:"qtyReceived,omitempty"` // Actual qty received back
+	UnitCost    int64         `bson:"unitCost" json:"unitCost"`
+	UnitPrice   int64         `bson:"unitPrice,omitempty" json:"unitPrice,omitempty"` // For customer returns
+	Reason      ReturnReason  `bson:"reason" json:"reason"`
+	Condition   ItemCondition `bson:"condition,omitempty" json:"condition,omitempty"`
+	Notes       string        `bson:"notes,omitempty" json:"notes,omitempty"`
+	Restockable bool          `bson:"restockable" json:"restockable"`
+	LotID       string        `bson:"lotId,omitempty" json:"lotId,omitempty"` // Created lot for restocked items
+}
+
+// Return represents a return/RMA request
+type Return struct {
+	ID          string `bson:"_id" json:"id"`
+	OrgID       string `bson:"orgId" json:"orgId"`
+	BranchID    string `bson:"branchId" json:"branchId"`
+	ReferenceNo string `bson:"referenceNo" json:"referenceNo"` // e.g., RMA-000001
+
+	Type   ReturnType   `bson:"type" json:"type"`     // CUSTOMER or SUPPLIER
+	Status ReturnStatus `bson:"status" json:"status"`
+
+	// Reference to original document
+	OriginalOrderID string `bson:"originalOrderId,omitempty" json:"originalOrderId,omitempty"`                 // Transaction ID for customer returns
+	OriginalPOID    string `bson:"originalPurchaseOrderId,omitempty" json:"originalPurchaseOrderId,omitempty"` // PO ID for supplier returns
+	OriginalRefNo   string `bson:"originalReferenceNo,omitempty" json:"originalReferenceNo,omitempty"`
+
+	// For customer returns
+	CustomerID    string `bson:"customerId,omitempty" json:"customerId,omitempty"`
+	CustomerName  string `bson:"customerName,omitempty" json:"customerName,omitempty"`
+	CustomerPhone string `bson:"customerPhone,omitempty" json:"customerPhone,omitempty"`
+
+	// For supplier returns
+	SupplierID   string `bson:"supplierId,omitempty" json:"supplierId,omitempty"`
+	SupplierName string `bson:"supplierName,omitempty" json:"supplierName,omitempty"`
+
+	Items      []ReturnItem     `bson:"items" json:"items"`
+	Resolution ReturnResolution `bson:"resolution,omitempty" json:"resolution,omitempty"`
+
+	// Financial tracking
+	TotalValue     int64 `bson:"totalValue" json:"totalValue"`                             // Total value of returned items
+	RefundAmount   int64 `bson:"refundAmount,omitempty" json:"refundAmount,omitempty"`     // For customer refunds
+	CreditAmount   int64 `bson:"creditAmount,omitempty" json:"creditAmount,omitempty"`     // Supplier credit expected
+	CreditReceived int64 `bson:"creditReceived,omitempty" json:"creditReceived,omitempty"` // Supplier credit received
+
+	// Shipping (for supplier returns)
+	ShippingInfo *ShippingInfo `bson:"shippingInfo,omitempty" json:"shippingInfo,omitempty"`
+
+	// Notes and approvals
+	RequestReason   string `bson:"requestReason,omitempty" json:"requestReason,omitempty"`
+	ApprovalNotes   string `bson:"approvalNotes,omitempty" json:"approvalNotes,omitempty"`
+	InternalNotes   string `bson:"internalNotes,omitempty" json:"internalNotes,omitempty"`
+	RejectionReason string `bson:"rejectionReason,omitempty" json:"rejectionReason,omitempty"`
+
+	// Audit fields
+	RequestedBy string `bson:"requestedBy" json:"requestedBy"`
+	ApprovedBy  string `bson:"approvedBy,omitempty" json:"approvedBy,omitempty"`
+	ReceivedBy  string `bson:"receivedBy,omitempty" json:"receivedBy,omitempty"` // Who received the returned items
+	CompletedBy string `bson:"completedBy,omitempty" json:"completedBy,omitempty"`
+
+	RequestedAt time.Time `bson:"requestedAt" json:"requestedAt"`
+	ApprovedAt  time.Time `bson:"approvedAt,omitempty" json:"approvedAt,omitempty"`
+	ReceivedAt  time.Time `bson:"receivedAt,omitempty" json:"receivedAt,omitempty"`
+	ShippedAt   time.Time `bson:"shippedAt,omitempty" json:"shippedAt,omitempty"`
+	CompletedAt time.Time `bson:"completedAt,omitempty" json:"completedAt,omitempty"`
+
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
+}
+
+// ==================== AUDIT TRAIL ====================
+
+// AuditAction represents the type of change
+type AuditAction string
+
+const (
+	AuditActionCreate AuditAction = "CREATE"
+	AuditActionUpdate AuditAction = "UPDATE"
+	AuditActionDelete AuditAction = "DELETE"
+)
+
+// AuditLog is an immutable record of entity changes
+type AuditLog struct {
+	ID    string `bson:"_id" json:"id"`
+	OrgID string `bson:"orgId" json:"orgId"`
+
+	// What changed
+	EntityType string      `bson:"entityType" json:"entityType"` // Product, PurchaseOrder, Transaction, StockLevel
+	EntityID   string      `bson:"entityId" json:"entityId"`
+	Action     AuditAction `bson:"action" json:"action"`
+
+	// Who changed it
+	UserID    string `bson:"userId" json:"userId"`
+	UserName  string `bson:"userName" json:"userName"`
+	UserEmail string `bson:"userEmail" json:"userEmail"`
+
+	// Before/After values (stored as raw BSON for flexibility)
+	OldValue bson.Raw `bson:"oldValue,omitempty" json:"oldValue,omitempty"`
+	NewValue bson.Raw `bson:"newValue,omitempty" json:"newValue,omitempty"`
+
+	// Changed fields (derived from diff for quick viewing)
+	ChangedFields []string `bson:"changedFields,omitempty" json:"changedFields,omitempty"`
+
+	// Context
+	IPAddress string `bson:"ipAddress,omitempty" json:"ipAddress,omitempty"`
+	UserAgent string `bson:"userAgent,omitempty" json:"userAgent,omitempty"`
+	Reason    string `bson:"reason,omitempty" json:"reason,omitempty"`
+
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
 }

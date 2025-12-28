@@ -1,29 +1,41 @@
-import { apiClient } from '@/lib/api-client';
-import type { User, Organization, Branch, LoginRequest, LoginResponse } from './types';
+import { apiClient } from '@/lib/api-client'
+import type { User, Organization, Branch } from '@/stores/auth-store'
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface SignupRequest {
+  name: string
+  email: string
+  password: string
+  orgName?: string
+}
+
+// Backend returns data at root level (not wrapped in data property)
+export interface AuthResponse {
+  user: User
+  organization: Organization
+  branch?: Branch | null
+  organizations: Organization[]
+  branches: Branch[]
+}
 
 export const authApi = {
-  // Get current authenticated user
-  async me(): Promise<{ user: User; organization: Organization; organizations: Organization[]; branches: Branch[] }> {
-    return apiClient.get('/auth/me');
-  },
+  login: (data: LoginRequest) =>
+    apiClient.post<AuthResponse>('/api/auth/login', data),
 
-  // Login with email and password
-  async login(data: LoginRequest): Promise<LoginResponse> {
-    return apiClient.post('/auth/login', data);
-  },
+  signup: (data: SignupRequest) =>
+    apiClient.post<AuthResponse>('/api/auth/signup', data),
 
-  // Logout
-  async logout(): Promise<void> {
-    return apiClient.post('/auth/logout');
-  },
+  logout: () => apiClient.post<{ success: boolean }>('/api/auth/logout'),
 
-  // Switch organization
-  async switchOrg(orgId: string): Promise<{ organization: Organization; branches: Branch[] }> {
-    return apiClient.post('/auth/switch-org', { orgId });
-  },
+  me: () => apiClient.get<AuthResponse>('/api/auth/me'),
 
-  // Switch branch
-  async switchBranch(branchId: string): Promise<{ branch: Branch }> {
-    return apiClient.post('/auth/switch-branch', { branchId });
-  },
-};
+  switchOrg: (orgId: string) =>
+    apiClient.post<AuthResponse>('/api/auth/switch-org', { orgId }),
+
+  switchBranch: (branchId: string) =>
+    apiClient.post<AuthResponse>('/api/auth/switch-branch', { branchId }),
+}

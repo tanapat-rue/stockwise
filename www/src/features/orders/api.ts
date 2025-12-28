@@ -1,112 +1,65 @@
-import { apiClient, ApiResponse, PaginatedResponse } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client'
 import type {
   Order,
-  OrderFilters,
-  OrderFormValues,
-  QuickAddOrder,
-  OrderStatus,
-  FulfillmentStatus,
-} from './types';
+  OrderListParams,
+  OrderListResponse,
+  CreateOrderRequest,
+  UpdateOrderRequest,
+  ShipOrderRequest,
+  CancelOrderRequest,
+} from './types'
 
 export const ordersApi = {
-  // CRUD
-  list: (filters?: OrderFilters) =>
-    apiClient.get<PaginatedResponse<Order>>('/orders', filters as Record<string, string | number | boolean | undefined>),
+  list: (params?: OrderListParams) =>
+    apiClient.get<OrderListResponse>('/api/orders', params as Record<string, unknown>),
 
-  get: (id: string) =>
-    apiClient.get<ApiResponse<Order>>(`/orders/${id}`),
+  get: (id: string) => apiClient.get<{ data: Order }>(`/api/orders/${id}`),
 
-  create: (data: OrderFormValues) =>
-    apiClient.post<ApiResponse<Order>>('/orders', data),
+  create: (data: CreateOrderRequest) =>
+    apiClient.post<{ data: Order }>('/api/orders', data),
 
-  update: (id: string, data: Partial<OrderFormValues>) =>
-    apiClient.patch<ApiResponse<Order>>(`/orders/${id}`, data),
+  update: (id: string, data: UpdateOrderRequest) =>
+    apiClient.patch<{ data: Order }>(`/api/orders/${id}`, data),
 
-  delete: (id: string) =>
-    apiClient.delete<ApiResponse<void>>(`/orders/${id}`),
+  delete: (id: string) => apiClient.delete(`/api/orders/${id}`),
 
-  // Quick Add (POS mode)
-  quickAdd: (data: QuickAddOrder) =>
-    apiClient.post<ApiResponse<Order>>('/orders/quick', data),
-
-  // Status updates
-  updateStatus: (id: string, status: OrderStatus, notes?: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/status`, { status, notes }),
-
-  updateFulfillmentStatus: (id: string, status: FulfillmentStatus, notes?: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/fulfillment`, { status, notes }),
-
-  // Confirm order
+  // Status actions
   confirm: (id: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/confirm`),
+    apiClient.post<{ data: Order }>(`/api/orders/${id}/confirm`),
 
-  // Complete order
+  ship: (id: string, data: ShipOrderRequest) =>
+    apiClient.post<{ data: Order }>(`/api/orders/${id}/ship`, data),
+
+  deliver: (id: string) =>
+    apiClient.post<{ data: Order }>(`/api/orders/${id}/deliver`),
+
   complete: (id: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/complete`),
+    apiClient.post<{ data: Order }>(`/api/orders/${id}/complete`),
 
-  // Cancel order
-  cancel: (id: string, reason?: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/cancel`, { reason }),
-
-  // Refund
-  refund: (id: string, amount: number, reason?: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/refund`, { amount, reason }),
+  cancel: (id: string, data?: CancelOrderRequest) =>
+    apiClient.post<{ data: Order }>(`/api/orders/${id}/cancel`, data || {}),
 
   // Payment
-  recordPayment: (id: string, method: string, amount: number, reference?: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/payment`, {
-      method,
-      amount,
-      reference,
-    }),
+  recordPayment: (id: string, method: string, amount: number, note?: string) =>
+    apiClient.post<{ data: Order }>(`/api/orders/${id}/payment`, { method, amount, note }),
 
-  // Shipping
-  updateShipping: (
-    id: string,
-    shipping: { carrier?: string; trackingNumber?: string; shippedAt?: string }
-  ) => apiClient.patch<ApiResponse<Order>>(`/orders/${id}/shipping`, shipping),
-
-  markShipped: (id: string, trackingNumber?: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/ship`, { trackingNumber }),
-
-  markDelivered: (id: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/deliver`),
-
-  // Duplicate
-  duplicate: (id: string) =>
-    apiClient.post<ApiResponse<Order>>(`/orders/${id}/duplicate`),
-
-  // Get next order number
+  // Next order number
   getNextNumber: () =>
-    apiClient.get<ApiResponse<{ orderNumber: string }>>('/orders/next-number'),
-
-  // Bulk operations
-  bulkUpdateStatus: (ids: string[], status: OrderStatus) =>
-    apiClient.post<ApiResponse<void>>('/orders/bulk-status', { ids, status }),
-
-  bulkProcess: (ids: string[]) =>
-    apiClient.post<ApiResponse<void>>('/orders/bulk-process', { ids }),
-
-  // Timeline/History
-  getTimeline: (id: string) =>
-    apiClient.get<ApiResponse<{
-      events: {
-        id: string;
-        type: string;
-        description: string;
-        createdBy: string;
-        createdAt: string;
-      }[];
-    }>>(`/orders/${id}/timeline`),
+    apiClient.get<{ data: { orderNumber: string } }>('/api/orders/next-number'),
 
   // Stats
-  getStats: (filters?: { startDate?: string; endDate?: string; branchId?: string }) =>
-    apiClient.get<ApiResponse<{
-      totalOrders: number;
-      totalRevenue: number;
-      totalProfit: number;
-      avgOrderValue: number;
-      pendingCount: number;
-      pendingShipment: number;
-    }>>('/orders/stats', filters),
-};
+  getStats: () =>
+    apiClient.get<{ data: {
+      pending: number
+      processing: number
+      shipped: number
+      delivered: number
+      cancelled: number
+      totalOrders: number
+      totalRevenue: number
+      totalProfit: number
+      avgOrderValue: number
+      pendingCount: number
+      pendingShipment: number
+    } }>('/api/orders/stats'),
+}

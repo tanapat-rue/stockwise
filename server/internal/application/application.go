@@ -20,8 +20,10 @@ import (
 	ordersmodule "stockflows/server/internal/modules/orders"
 	orgsmodule "stockflows/server/internal/modules/orgs"
 	productsmodule "stockflows/server/internal/modules/products"
-	reportsmodule "stockflows/server/internal/modules/reports"
 	purchaseordersmodule "stockflows/server/internal/modules/purchaseorders"
+	reportsmodule "stockflows/server/internal/modules/reports"
+	returnsmodule "stockflows/server/internal/modules/returns"
+	auditmodule "stockflows/server/internal/modules/audit"
 	stockmodule "stockflows/server/internal/modules/stock"
 	suppliersmodule "stockflows/server/internal/modules/suppliers"
 	uploadsmodule "stockflows/server/internal/modules/uploads"
@@ -112,9 +114,11 @@ func buildRouter(deps deps.Dependencies) *gin.Engine {
 		suppliersmodule.New(deps),
 		purchaseordersmodule.New(deps),
 		ordersmodule.New(deps),
+		returnsmodule.New(deps),
 		uploadsmodule.New(deps),
 		billingmodule.New(deps),
 		reportsmodule.New(deps),
+		auditmodule.New(deps),
 	)
 
 	return r

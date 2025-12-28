@@ -1,24 +1,21 @@
-import { Toaster as Sonner, toast } from 'sonner';
+import { Toaster as SonnerToaster } from 'sonner'
+import { useSettingsStore } from '@/stores/settings-store'
 
-type ToasterProps = React.ComponentProps<typeof Sonner>;
+export function Toaster() {
+  const theme = useSettingsStore((s) => s.theme)
 
-const Toaster = ({ ...props }: ToasterProps) => {
   return (
-    <Sonner
-      className="toaster group"
+    <SonnerToaster
+      theme={theme === 'system' ? undefined : theme}
       position="bottom-right"
       toastOptions={{
         classNames: {
-          toast:
-            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
+          toast: 'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
           description: 'group-[.toast]:text-muted-foreground',
           actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
           cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
         },
       }}
-      {...props}
     />
-  );
-};
-
-export { Toaster, toast };
+  )
+}

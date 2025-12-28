@@ -1,67 +1,59 @@
-import { apiClient, ApiResponse, PaginatedResponse } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client'
 import type {
   PurchaseOrder,
-  PurchaseOrderFilters,
-  PurchaseOrderFormValues,
-  ReceiveItemsPayload,
-  POStatus,
-} from './types';
+  POListParams,
+  POListResponse,
+  CreatePORequest,
+  UpdatePORequest,
+  ReceivePORequest,
+  RecordPOPaymentRequest,
+} from './types'
 
 export const purchaseOrdersApi = {
-  // CRUD
-  list: (filters?: PurchaseOrderFilters) =>
-    apiClient.get<PaginatedResponse<PurchaseOrder>>('/purchase-orders', filters as Record<string, string | number | boolean | undefined>),
+  list: (params?: POListParams) =>
+    apiClient.get<POListResponse>('/api/purchase-orders', params as Record<string, unknown>),
 
   get: (id: string) =>
-    apiClient.get<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}`),
+    apiClient.get<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}`),
 
-  create: (data: PurchaseOrderFormValues) =>
-    apiClient.post<ApiResponse<PurchaseOrder>>('/purchase-orders', data),
+  create: (data: CreatePORequest) =>
+    apiClient.post<{ data: PurchaseOrder }>('/api/purchase-orders', data),
 
-  update: (id: string, data: Partial<PurchaseOrderFormValues>) =>
-    apiClient.patch<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}`, data),
+  update: (id: string, data: UpdatePORequest) =>
+    apiClient.patch<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}`, data),
 
-  delete: (id: string) =>
-    apiClient.delete<ApiResponse<void>>(`/purchase-orders/${id}`),
+  delete: (id: string) => apiClient.delete(`/api/purchase-orders/${id}`),
 
-  // Status updates
-  updateStatus: (id: string, status: POStatus, notes?: string) =>
-    apiClient.post<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}/status`, { status, notes }),
-
-  // Submit draft
+  // Status actions
   submit: (id: string) =>
-    apiClient.post<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}/submit`),
+    apiClient.post<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}/submit`),
 
-  // Receive items
-  receiveItems: (id: string, payload: ReceiveItemsPayload) =>
-    apiClient.post<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}/receive`, payload),
+  receive: (id: string, data?: ReceivePORequest) =>
+    apiClient.post<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}/receive`, data || {}),
 
-  // Cancel
   cancel: (id: string, reason?: string) =>
-    apiClient.post<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}/cancel`, { reason }),
+    apiClient.post<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}/cancel`, { reason }),
+
+  duplicate: (id: string) =>
+    apiClient.post<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}/duplicate`),
 
   // Payment
-  recordPayment: (id: string, amount: number, method: string, reference?: string) =>
-    apiClient.post<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}/payment`, {
-      amount,
-      method,
-      reference,
-    }),
+  recordPayment: (id: string, data: RecordPOPaymentRequest) =>
+    apiClient.post<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}/payment`, data),
 
-  // Duplicate
-  duplicate: (id: string) =>
-    apiClient.post<ApiResponse<PurchaseOrder>>(`/purchase-orders/${id}/duplicate`),
+  // Update status
+  updateStatus: (id: string, status: string, notes?: string) =>
+    apiClient.post<{ data: PurchaseOrder }>(`/api/purchase-orders/${id}/status`, { status, notes }),
 
-  // Get next order number
+  // Bulk status update
+  bulkUpdateStatus: (ids: string[], status: string) =>
+    apiClient.post<{ data: { updated: number } }>('/api/purchase-orders/bulk-status', { ids, status }),
+
+  // Next PO number
   getNextNumber: () =>
-    apiClient.get<ApiResponse<{ orderNumber: string }>>('/purchase-orders/next-number'),
+    apiClient.get<{ data: { seq: number; referenceNo: string; orderNumber: string } }>('/api/purchase-orders/next-number'),
 
   // Stats
-  getStats: (filters?: { startDate?: string; endDate?: string }) =>
-    apiClient.get<ApiResponse<{
-      total: number;
-      pending: number;
-      totalValue: number;
-      unpaidValue: number;
-    }>>('/purchase-orders/stats', filters as Record<string, string | number | boolean | undefined>),
-};
+  getStats: () =>
+    apiClient.get<{ data: { total: number; pending: number; totalValue: number; unpaidValue: number } }>('/api/purchase-orders/stats'),
+}

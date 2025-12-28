@@ -1,185 +1,276 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-  Plus,
-  Search,
-  MoreHorizontal,
-  Mail,
-  Phone,
-  MapPin,
-  Users,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Plus, MoreHorizontal, Pencil, Trash2, Users } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { DataTable, SortableHeader } from '@/components/ui/data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
-import { apiClient } from '@/lib/api-client';
-
-interface Customer {
-  id: string;
-  name: string;
-  email?: string;
-  phone: string;
-  address?: string;
-  points: number;
-  totalSpent: number;
-  createdAt: string;
-}
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '@/features/customers'
+import type { Customer, CreateCustomerRequest } from '@/features/customers'
+import { formatCurrency } from '@/lib/utils'
 
 export function CustomersPage() {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState('')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['customers', search],
-    queryFn: async () => {
-      const response = await apiClient.get<{ data: Customer[] }>('/customers', {
-        search: search || undefined,
-      });
-      return response.data || [];
+  const { data: customersData, isLoading } = useCustomers({ search })
+  const createCustomer = useCreateCustomer()
+  const updateCustomer = useUpdateCustomer()
+  const deleteCustomer = useDeleteCustomer()
+
+  const customers = customersData?.data || []
+
+  const columns: ColumnDef<Customer>[] = [
+    {
+      accessorKey: 'code',
+      header: 'Code',
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">{row.getValue('code') || '-'}</span>
+      ),
     },
-  });
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+            <Users className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-medium">{row.getValue('name')}</p>
+            {row.original.email && (
+              <p className="text-sm text-muted-foreground">{row.original.email}</p>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'phone',
+      header: 'Phone',
+      cell: ({ row }) => row.getValue('phone') || '-',
+    },
+    {
+      accessorKey: 'totalOrders',
+      header: ({ column }) => <SortableHeader column={column}>Orders</SortableHeader>,
+    },
+    {
+      accessorKey: 'totalSpent',
+      header: ({ column }) => <SortableHeader column={column}>Total Spent</SortableHeader>,
+      cell: ({ row }) => formatCurrency(row.getValue('totalSpent')),
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEditingCustomer(row.original)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => setDeletingCustomer(row.original)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
-  const customers = data || [];
+  const handleCreate = (data: CreateCustomerRequest) => {
+    createCustomer.mutate(data, {
+      onSuccess: () => setIsCreateOpen(false),
+    })
+  }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('th-TH', {
-      style: 'currency',
-      currency: 'THB',
-    }).format(amount / 100);
-  };
+  const handleUpdate = (data: CreateCustomerRequest) => {
+    if (!editingCustomer) return
+    updateCustomer.mutate(
+      { id: editingCustomer.id, data },
+      { onSuccess: () => setEditingCustomer(null) }
+    )
+  }
+
+  const handleDelete = () => {
+    if (!deletingCustomer) return
+    deleteCustomer.mutate(deletingCustomer.id, {
+      onSuccess: () => setDeletingCustomer(null),
+    })
+  }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer relationships</p>
+          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
+          <p className="text-muted-foreground">Manage your customer database</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Customer
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{customers.length}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search customers..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
+      {/* Search */}
+      <Input
+        placeholder="Search customers..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       {/* Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Total Spent</TableHead>
-              <TableHead>Points</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  <Spinner className="mx-auto" />
-                </TableCell>
-              </TableRow>
-            ) : customers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No customers found
-                </TableCell>
-              </TableRow>
-            ) : (
-              customers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell>
-                    <div className="font-medium">{customer.name}</div>
-                    {customer.address && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {customer.address}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {customer.email && (
-                        <div className="flex items-center gap-1 text-sm">
-                          <Mail className="h-3 w-3" />
-                          {customer.email}
-                        </div>
-                      )}
-                      {customer.phone && (
-                        <div className="flex items-center gap-1 text-sm">
-                          <Phone className="h-3 w-3" />
-                          {customer.phone}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatCurrency(customer.totalSpent)}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{customer.points} pts</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={customers}
+        isLoading={isLoading}
+        emptyPreset="customers"
+        emptyMessage="Your customer list is empty. Add your first customer."
+      />
+
+      {/* Create/Edit Dialog */}
+      <CustomerFormDialog
+        open={isCreateOpen || !!editingCustomer}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreateOpen(false)
+            setEditingCustomer(null)
+          }
+        }}
+        customer={editingCustomer}
+        onSubmit={editingCustomer ? handleUpdate : handleCreate}
+        isLoading={createCustomer.isPending || updateCustomer.isPending}
+      />
+
+      {/* Delete Confirmation */}
+      <Dialog open={!!deletingCustomer} onOpenChange={() => setDeletingCustomer(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Customer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deletingCustomer?.name}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingCustomer(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              loading={deleteCustomer.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
+}
+
+function CustomerFormDialog({
+  open,
+  onOpenChange,
+  customer,
+  onSubmit,
+  isLoading,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  customer: Customer | null
+  onSubmit: (data: CreateCustomerRequest) => void
+  isLoading: boolean
+}) {
+  const [formData, setFormData] = useState<CreateCustomerRequest>({
+    name: customer?.name || '',
+    email: customer?.email || '',
+    phone: customer?.phone || '',
+    address: customer?.address || '',
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{customer ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isLoading}>
+              {customer ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
 }

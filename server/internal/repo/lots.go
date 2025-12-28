@@ -14,6 +14,7 @@ import (
 func (r *Repo) CreateInventoryLot(ctx context.Context, lot models.InventoryLot) (models.InventoryLot, error) {
 	lot.CreatedAt = now()
 	lot.UpdatedAt = lot.CreatedAt
+	lot.Version = 1 // Initialize version for optimistic locking
 	if lot.ReceivedAt.IsZero() {
 		lot.ReceivedAt = lot.CreatedAt
 	}
@@ -61,7 +62,10 @@ func (r *Repo) DecrementLotRemaining(ctx context.Context, lotID string, qty int)
 		ctx,
 		bson.M{"_id": lotID, "qtyRemaining": bson.M{"$gte": qty}},
 		bson.M{
-			"$inc": bson.M{"qtyRemaining": -qty},
+			"$inc": bson.M{
+				"qtyRemaining": -qty,
+				"version":      1,
+			},
 			"$set": bson.M{"updatedAt": now()},
 		},
 		options.FindOneAndUpdate().SetReturnDocument(options.After),
@@ -82,7 +86,10 @@ func (r *Repo) IncrementLotRemaining(ctx context.Context, lotID string, qty int)
 		ctx,
 		bson.M{"_id": lotID},
 		bson.M{
-			"$inc": bson.M{"qtyRemaining": qty},
+			"$inc": bson.M{
+				"qtyRemaining": qty,
+				"version":      1,
+			},
 			"$set": bson.M{"updatedAt": now()},
 		},
 	)

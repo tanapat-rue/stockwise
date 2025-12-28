@@ -1,171 +1,103 @@
-import { NavLink, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   Package,
-  FolderTree,
-  Warehouse,
   ShoppingCart,
-  Truck,
+  ClipboardList,
   Users,
-  Building2,
-  FileText,
+  Truck,
   BarChart3,
   Settings,
   ChevronLeft,
-  ChevronRight,
-  Menu,
-  X,
-  UserCog,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useUIStore } from '@/stores/ui-store';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+  Boxes,
+  RotateCcw,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useUIStore } from '@/stores/ui-store'
+import { useAuthStore } from '@/stores/auth-store'
+import { Button } from '@/components/ui/button'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/products', icon: Package },
-  { name: 'Categories', href: '/categories', icon: FolderTree },
-  { name: 'Stock', href: '/stock', icon: Warehouse },
+  { name: 'Stock', href: '/stock', icon: Boxes },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
-  { name: 'Purchase Orders', href: '/purchase-orders', icon: Truck },
+  { name: 'Purchase Orders', href: '/purchase-orders', icon: ClipboardList },
   { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Suppliers', href: '/suppliers', icon: Building2 },
-  { name: 'Documents', href: '/documents', icon: FileText },
+  { name: 'Suppliers', href: '/suppliers', icon: Truck },
+  { name: 'Returns', href: '/returns', icon: RotateCcw },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Users', href: '/users', icon: UserCog },
-];
-
-const bottomNavigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
-];
-
-interface NavItemProps {
-  item: { name: string; href: string; icon: React.ElementType };
-  collapsed: boolean;
-}
-
-function NavItem({ item, collapsed }: NavItemProps) {
-  const location = useLocation();
-  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
-
-  const content = (
-    <NavLink
-      to={item.href}
-      className={cn(
-        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-        isActive
-          ? 'bg-primary text-primary-foreground'
-          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-        collapsed && 'justify-center px-2'
-      )}
-    >
-      <item.icon className="h-5 w-5 shrink-0" />
-      {!collapsed && <span>{item.name}</span>}
-    </NavLink>
-  );
-
-  if (collapsed) {
-    return (
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent side="right" className="font-medium">
-          {item.name}
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
-  return content;
-}
+]
 
 export function Sidebar() {
-  const { sidebarCollapsed, toggleSidebar, mobileMenuOpen, setMobileMenuOpen } = useUIStore();
+  const location = useLocation()
+  const { sidebarCollapsed, toggleSidebar } = useUIStore()
+  const { organization } = useAuthStore()
 
   return (
-    <>
-      {/* Mobile sidebar backdrop */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Mobile sidebar */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-y-0 left-0 z-50 w-64 border-r bg-card lg:hidden"
-          >
-            <div className="flex h-16 items-center justify-between border-b px-4">
-              <span className="text-lg font-bold">StockFlows</span>
-              <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
-                <X className="h-5 w-5" />
-              </Button>
+    <aside
+      className={cn(
+        'fixed left-0 top-0 z-40 h-screen border-r bg-card transition-all duration-300',
+        sidebarCollapsed ? 'w-16' : 'w-64'
+      )}
+    >
+      {/* Logo */}
+      <div className="flex h-16 items-center justify-between border-b px-4">
+        {!sidebarCollapsed && (
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Package className="h-5 w-5" />
             </div>
-            <ScrollArea className="h-[calc(100vh-4rem)]">
-              <nav className="flex flex-col gap-1 p-4">
-                {navigation.map((item) => (
-                  <NavItem key={item.href} item={item} collapsed={false} />
-                ))}
-                <Separator className="my-2" />
-                {bottomNavigation.map((item) => (
-                  <NavItem key={item.href} item={item} collapsed={false} />
-                ))}
-              </nav>
-            </ScrollArea>
-          </motion.aside>
+            <span className="font-semibold">StockFlows</span>
+          </Link>
         )}
-      </AnimatePresence>
+        {sidebarCollapsed && (
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground mx-auto">
+            <Package className="h-5 w-5" />
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className={cn('h-8 w-8', sidebarCollapsed && 'absolute -right-3 top-6 z-50 rounded-full border bg-background shadow-md')}
+        >
+          <ChevronLeft className={cn('h-4 w-4 transition-transform', sidebarCollapsed && 'rotate-180')} />
+        </Button>
+      </div>
 
-      {/* Desktop sidebar */}
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-30 hidden border-r bg-card transition-all duration-300 lg:block',
-          sidebarCollapsed ? 'w-16' : 'w-64'
-        )}
-      >
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          {!sidebarCollapsed && <span className="text-lg font-bold">StockFlows</span>}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className={cn(sidebarCollapsed && 'mx-auto')}
-          >
-            {sidebarCollapsed ? (
-              <ChevronRight className="h-5 w-5" />
-            ) : (
-              <ChevronLeft className="h-5 w-5" />
-            )}
-          </Button>
+      {/* Organization */}
+      {organization && !sidebarCollapsed && (
+        <div className="border-b px-4 py-3">
+          <p className="text-xs text-muted-foreground">Organization</p>
+          <p className="truncate text-sm font-medium">{organization.name}</p>
         </div>
+      )}
 
-        <ScrollArea className="h-[calc(100vh-4rem)]">
-          <nav className={cn('flex flex-col gap-1 p-4', sidebarCollapsed && 'px-2')}>
-            {navigation.map((item) => (
-              <NavItem key={item.href} item={item} collapsed={sidebarCollapsed} />
-            ))}
-            <Separator className="my-2" />
-            {bottomNavigation.map((item) => (
-              <NavItem key={item.href} item={item} collapsed={sidebarCollapsed} />
-            ))}
-          </nav>
-        </ScrollArea>
-      </aside>
-    </>
-  );
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 p-2">
+        {navigation.map((item) => {
+          const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/')
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                sidebarCollapsed && 'justify-center px-2'
+              )}
+              title={sidebarCollapsed ? item.name : undefined}
+            >
+              <item.icon className="h-5 w-5 shrink-0" />
+              {!sidebarCollapsed && <span>{item.name}</span>}
+            </Link>
+          )
+        })}
+      </nav>
+    </aside>
+  )
 }

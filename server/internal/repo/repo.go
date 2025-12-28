@@ -29,6 +29,8 @@ const (
 	ColPurchaseOrders  = "purchase_orders"
 	ColTransactions    = "transactions"
 	ColCounters        = "counters"
+	ColReturns         = "returns"
+	ColAuditLogs       = "audit_logs"
 )
 
 type Repo struct {

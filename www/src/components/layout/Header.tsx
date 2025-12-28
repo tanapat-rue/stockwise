@@ -1,5 +1,6 @@
-import { Menu, Search, Bell, Sun, Moon, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom'
+import { Bell, Search, User, LogOut, Settings, Moon, Sun } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,147 +8,95 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUIStore, useSettingsStore, useAuthStore } from '@/stores/ui-store';
-import { useLogout } from '@/features/auth';
-import { useEffect } from 'react';
+} from '@/components/ui/dropdown-menu'
+import { useAuthStore } from '@/stores/auth-store'
+import { useSettingsStore } from '@/stores/settings-store'
+import { useUIStore } from '@/stores/ui-store'
+import { apiClient } from '@/lib/api-client'
 
 export function Header() {
-  const { setMobileMenuOpen, openCommandPalette } = useUIStore();
-  const { theme, setTheme } = useSettingsStore();
-  const { user } = useAuthStore();
-  const logoutMutation = useLogout();
+  const navigate = useNavigate()
+  const { user, logout: clearAuth } = useAuthStore()
+  const { theme, setTheme } = useSettingsStore()
+  const { setCommandPaletteOpen } = useUIStore()
 
-  // Apply theme to document
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
+  const handleLogout = async () => {
+    try {
+      await apiClient.post('/auth/logout')
+    } catch {
+      // Ignore logout errors
     }
-  }, [theme]);
-
-  // Keyboard shortcut for command palette
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        openCommandPalette();
-      }
-    };
-
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
-  }, [openCommandPalette]);
+    clearAuth()
+    navigate('/login')
+  }
 
   const toggleTheme = () => {
-    if (theme === 'light') {
-      setTheme('dark');
-    } else if (theme === 'dark') {
-      setTheme('system');
-    } else {
-      setTheme('light');
-    }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-card px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4">
+      {/* Search */}
       <div className="flex items-center gap-4">
-        {/* Mobile menu button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden"
-          onClick={() => setMobileMenuOpen(true)}
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-
-        {/* Search button */}
         <Button
           variant="outline"
-          className="hidden w-64 justify-start text-muted-foreground sm:flex"
-          onClick={openCommandPalette}
+          className="w-64 justify-start gap-2 text-muted-foreground"
+          onClick={() => setCommandPaletteOpen(true)}
         >
-          <Search className="mr-2 h-4 w-4" />
-          <span className="flex-1 text-left">Search...</span>
-          <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+          <Search className="h-4 w-4" />
+          <span>Search...</span>
+          <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
             <span className="text-xs">⌘</span>K
           </kbd>
         </Button>
-
-        {/* Mobile search icon */}
-        <Button variant="ghost" size="icon" className="sm:hidden" onClick={openCommandPalette}>
-          <Search className="h-5 w-5" />
-        </Button>
       </div>
 
+      {/* Right side */}
       <div className="flex items-center gap-2">
+        {/* Theme toggle */}
+        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          {theme === 'dark' ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
+
         {/* Notifications */}
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>
 
-        {/* Theme toggle */}
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
-          {theme === 'dark' ? (
-            <Moon className="h-5 w-5" />
-          ) : theme === 'light' ? (
-            <Sun className="h-5 w-5" />
-          ) : (
-            <Sun className="h-5 w-5" />
-          )}
-        </Button>
-
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="" alt={user?.name || 'User'} />
-                <AvatarFallback>{user ? getInitials(user.name) : 'U'}</AvatarFallback>
-              </Avatar>
+            <Button variant="ghost" className="gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <User className="h-4 w-4" />
+              </div>
+              <span className="hidden md:inline-block">{user?.name || 'User'}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name || 'Guest'}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email || 'guest@example.com'}
-                </p>
+                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => logoutMutation.mutate()}
-              className="text-destructive"
-              disabled={logoutMutation.isPending}
-            >
-              {logoutMutation.isPending ? 'Logging out...' : 'Log out'}
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
-  );
+  )
 }

@@ -10,6 +10,7 @@ import (
 	"stockflows/server/internal/deps"
 	"stockflows/server/internal/models"
 	"stockflows/server/internal/repo"
+	"stockflows/server/internal/services/costing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -680,30 +681,37 @@ func (m *Module) commitSaleDelivered(c *gin.Context, orgID string, txn models.Tr
 		committed = append(committed, committedItem{productID: it.ID, qty: it.Quantity})
 	}
 
-	// Consume FIFO lots to compute COGS per item.
+	// Compute COGS per item based on product's costing method.
+	costingSvc := costing.New(m.deps.Repo)
 	itemCost := make(map[string]int64, len(txn.Items))
 	allLines := make([]models.CostLine, 0, len(txn.Items))
 	var totalCOGS int64
 
 	for _, it := range txn.Items {
-		lines, cogs, err := m.deps.Repo.ConsumeLotsFIFO(c.Request.Context(), orgID, txn.BranchID, it.ID, it.Quantity)
+		// Get product to check costing method
+		product, perr := m.deps.Repo.GetProductByOrg(c.Request.Context(), orgID, it.ID)
+		if perr != nil {
+			rollbackStock()
+			_ = m.deps.Repo.UnlockTransactionStockCommit(c.Request.Context(), orgID, txn.ID)
+			return models.Transaction{}, errors.New("failed to get product for COGS calculation")
+		}
+
+		// Use costing service to compute COGS based on product's method
+		result, err := costingSvc.ComputeCOGS(c.Request.Context(), orgID, txn.BranchID, product, it.Quantity)
 		if err != nil && errors.Is(err, repo.ErrInsufficientLots) {
-			// Fallback: create an adjustment lot using the product's last purchase cost.
-			p, perr := m.deps.Repo.GetProductByOrg(c.Request.Context(), orgID, it.ID)
-			if perr == nil {
-				_, _ = m.deps.Repo.CreateInventoryLot(c.Request.Context(), models.InventoryLot{
-					ID:           primitive.NewObjectID().Hex(),
-					OrgID:        orgID,
-					BranchID:     txn.BranchID,
-					ProductID:    it.ID,
-					Source:       "ADJUSTMENT",
-					UnitCost:     p.Cost,
-					QtyReceived:  it.Quantity,
-					QtyRemaining: it.Quantity,
-					ReceivedAt:   time.Now().UTC(),
-				})
-				lines, cogs, err = m.deps.Repo.ConsumeLotsFIFO(c.Request.Context(), orgID, txn.BranchID, it.ID, it.Quantity)
-			}
+			// Fallback for FIFO: create an adjustment lot using the product's last purchase cost.
+			_, _ = m.deps.Repo.CreateInventoryLot(c.Request.Context(), models.InventoryLot{
+				ID:           primitive.NewObjectID().Hex(),
+				OrgID:        orgID,
+				BranchID:     txn.BranchID,
+				ProductID:    it.ID,
+				Source:       "ADJUSTMENT",
+				UnitCost:     product.Cost,
+				QtyReceived:  it.Quantity,
+				QtyRemaining: it.Quantity,
+				ReceivedAt:   time.Now().UTC(),
+			})
+			result, err = costingSvc.ComputeCOGS(c.Request.Context(), orgID, txn.BranchID, product, it.Quantity)
 		}
 		if err != nil {
 			// Rollback lots + stock best-effort.
@@ -715,9 +723,12 @@ func (m *Module) commitSaleDelivered(c *gin.Context, orgID string, txn models.Tr
 			return models.Transaction{}, err
 		}
 
-		allLines = append(allLines, lines...)
-		itemCost[it.ID] += cogs
-		totalCOGS += cogs
+		// Update product total quantity for moving average tracking
+		_ = costingSvc.UpdateMovingAverageOnSale(c.Request.Context(), orgID, it.ID, it.Quantity)
+
+		allLines = append(allLines, result.CostLines...)
+		itemCost[it.ID] += result.TotalCOGS
+		totalCOGS += result.TotalCOGS
 	}
 
 	updatedItems := make([]models.TransactionItem, 0, len(txn.Items))
