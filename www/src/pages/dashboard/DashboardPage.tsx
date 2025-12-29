@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { motion } from 'framer-motion'
 import {
   Package,
   ShoppingCart,
@@ -14,6 +15,28 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatCard } from '@/components/ui/stat-card'
 import { useAuthStore } from '@/stores/auth-store'
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0, 0.2, 1] as const,
+    },
+  },
+}
 
 export function DashboardPage() {
   const { t } = useTranslation()
@@ -68,43 +91,56 @@ export function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title={t('pages.dashboard.totalProducts')}
-          value={stats.totalProducts.toLocaleString()}
-          icon={<Package className="h-4 w-4" />}
-          description={t('pages.dashboard.activeProducts')}
-        />
-        <StatCard
-          title={t('pages.dashboard.totalOrders')}
-          value={stats.totalOrders}
-          icon={<ShoppingCart className="h-4 w-4" />}
-          description={
-            <span className="flex items-center text-green-600">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              {t('pages.dashboard.fromLastMonth', { change: stats.ordersChange })}
-            </span>
-          }
-        />
-        <StatCard
-          title={t('pages.dashboard.revenue')}
-          value={`฿${(stats.revenue / 100).toLocaleString()}`}
-          icon={<TrendingUp className="h-4 w-4" />}
-          description={
-            <span className="flex items-center text-green-600">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              {t('pages.dashboard.fromLastMonth', { change: stats.revenueChange })}
-            </span>
-          }
-        />
-        <StatCard
-          title={t('pages.dashboard.lowStockAlerts')}
-          value={stats.lowStockItems}
-          icon={<AlertTriangle className="h-4 w-4" />}
-          description={t('pages.dashboard.itemsBelowReorder')}
-          className={stats.lowStockItems > 0 ? 'border-orange-200 bg-orange-50' : ''}
-        />
-      </div>
+      <motion.div
+        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants}>
+          <StatCard
+            title={t('pages.dashboard.totalProducts')}
+            value={stats.totalProducts.toLocaleString()}
+            icon={<Package className="h-4 w-4" />}
+            description={t('pages.dashboard.activeProducts')}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <StatCard
+            title={t('pages.dashboard.totalOrders')}
+            value={stats.totalOrders}
+            icon={<ShoppingCart className="h-4 w-4" />}
+            description={
+              <span className="flex items-center text-green-600">
+                <ArrowUpRight className="mr-1 h-3 w-3" />
+                {t('pages.dashboard.fromLastMonth', { change: stats.ordersChange })}
+              </span>
+            }
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <StatCard
+            title={t('pages.dashboard.revenue')}
+            value={`฿${(stats.revenue / 100).toLocaleString()}`}
+            icon={<TrendingUp className="h-4 w-4" />}
+            description={
+              <span className="flex items-center text-green-600">
+                <ArrowUpRight className="mr-1 h-3 w-3" />
+                {t('pages.dashboard.fromLastMonth', { change: stats.revenueChange })}
+              </span>
+            }
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <StatCard
+            title={t('pages.dashboard.lowStockAlerts')}
+            value={stats.lowStockItems}
+            icon={<AlertTriangle className="h-4 w-4" />}
+            description={t('pages.dashboard.itemsBelowReorder')}
+            className={stats.lowStockItems > 0 ? 'border-orange-200 bg-orange-50' : ''}
+          />
+        </motion.div>
+      </motion.div>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">

@@ -84,24 +84,24 @@ export function DataTable<TData, TValue>({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-10 w-[300px]" />
-        <div className="rounded-md border">
+        <Skeleton className="h-10 w-[300px] rounded-lg" />
+        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 {columns.map((_, i) => (
                   <TableHead key={i}>
-                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-20 rounded" />
                   </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
+                <TableRow key={i} className="hover:bg-transparent">
                   {columns.map((_, j) => (
                     <TableCell key={j}>
-                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full max-w-[200px] rounded" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -126,11 +126,11 @@ export function DataTable<TData, TValue>({
       )}
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
@@ -158,7 +158,7 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               ))
             ) : (
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columns.length} className="h-64">
                   <EmptyState
                     preset={globalFilter ? 'search' : emptyPreset}
@@ -175,49 +175,68 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}{' '}
-          to{' '}
-          {Math.min(
-            (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-            table.getFilteredRowModel().rows.length
-          )}{' '}
-          of {table.getFilteredRowModel().rows.length} results
-        </div>
-        <div className="flex items-center space-x-2">
+      <div className="flex items-center justify-between px-1">
+        <p className="text-sm text-muted-foreground">
+          Showing{' '}
+          <span className="font-medium text-foreground">
+            {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
+          </span>
+          {' '}to{' '}
+          <span className="font-medium text-foreground">
+            {Math.min(
+              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+              table.getFilteredRowModel().rows.length
+            )}
+          </span>
+          {' '}of{' '}
+          <span className="font-medium text-foreground">
+            {table.getFilteredRowModel().rows.length}
+          </span>
+          {' '}results
+        </p>
+        <div className="flex items-center gap-1">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronsLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-          </span>
+          <div className="flex items-center gap-1 px-2">
+            <span className="text-sm font-medium">
+              {table.getState().pagination.pageIndex + 1}
+            </span>
+            <span className="text-sm text-muted-foreground">/</span>
+            <span className="text-sm text-muted-foreground">
+              {table.getPageCount()}
+            </span>
+          </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
+            className="h-8 w-8 p-0"
           >
             <ChevronsRight className="h-4 w-4" />
           </Button>
@@ -235,14 +254,15 @@ export function SortableHeader({
   column: { getIsSorted: () => 'asc' | 'desc' | false; toggleSorting: (desc?: boolean) => void }
   children: React.ReactNode
 }) {
+  const isSorted = column.getIsSorted()
   return (
     <Button
       variant="ghost"
-      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      className="-ml-4 h-8"
+      onClick={() => column.toggleSorting(isSorted === 'asc')}
+      className="-ml-3 h-8 text-xs font-semibold uppercase tracking-wider hover:bg-transparent hover:text-foreground"
     >
       {children}
-      <ArrowUpDown className="ml-2 h-4 w-4" />
+      <ArrowUpDown className={cn('ml-2 h-3.5 w-3.5', isSorted && 'text-primary')} />
     </Button>
   )
 }

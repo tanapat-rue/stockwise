@@ -42,7 +42,7 @@ export function Header() {
   const ThemeIcon = currentThemeOption.icon
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4">
       {/* Search */}
       <div className="flex items-center gap-4">
         <Button
