@@ -91,6 +91,7 @@ type createProductRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Price       int64  `json:"price"`
+	Cost        int64  `json:"cost"`
 	Category    string `json:"category"`
 	Image       string `json:"image"`
 	ImageKey    string `json:"imageKey"`
@@ -125,7 +126,7 @@ func (m *Module) create(c *gin.Context) {
 		Name:       req.Name,
 		Desc:       strings.TrimSpace(req.Description),
 		Price:      req.Price,
-		Cost:       0,
+		Cost:       req.Cost,
 		Category:   strings.TrimSpace(req.Category),
 		Image:      strings.TrimSpace(req.Image),
 		ImageKey:   strings.TrimSpace(req.ImageKey),
@@ -151,6 +152,7 @@ type updateProductRequest struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Price       *int64  `json:"price"`
+	Cost        *int64  `json:"cost"`
 	Category    *string `json:"category"`
 	Image       *string `json:"image"`
 	ImageKey    *string `json:"imageKey"`
@@ -185,6 +187,9 @@ func (m *Module) update(c *gin.Context) {
 	}
 	if req.Price != nil {
 		patch["price"] = *req.Price
+	}
+	if req.Cost != nil {
+		patch["cost"] = *req.Cost
 	}
 	if req.Category != nil {
 		patch["category"] = strings.TrimSpace(*req.Category)
@@ -233,6 +238,29 @@ func (m *Module) delete(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+
+	// Check if product has any stock
+	hasStock, err := m.deps.Repo.ProductHasStock(c.Request.Context(), orgID, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check product stock"})
+		return
+	}
+	if hasStock {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete product with stock, adjust stock to zero first"})
+		return
+	}
+
+	// Check if product has any reservations
+	hasReservations, err := m.deps.Repo.ProductHasReservations(c.Request.Context(), orgID, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check product reservations"})
+		return
+	}
+	if hasReservations {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete product with active reservations"})
+		return
+	}
+
 	if err := m.deps.Repo.DeleteProductByOrg(c.Request.Context(), orgID, id); err != nil {
 		if err == repo.ErrNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})

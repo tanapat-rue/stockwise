@@ -128,12 +128,14 @@ func (m *Module) poToResponse(po models.PurchaseOrder, supplierName, branchName 
 	}
 
 	// Map backend status to frontend status
-	// Backend uses: OPEN, RECEIVING, RECEIVED, CANCELLED
-	// Frontend expects: DRAFT, PENDING, PARTIAL, RECEIVED, CANCELLED
+	// Backend uses: OPEN, SENT, RECEIVING, RECEIVED, CANCELLED
+	// Frontend expects: DRAFT, SENT, PENDING, PARTIAL, RECEIVED, CANCELLED
 	status := po.Status
 	switch po.Status {
 	case "OPEN":
 		status = "DRAFT" // New POs that haven't been submitted yet
+	case "SENT":
+		status = "SENT" // Submitted to supplier
 	case "RECEIVING":
 		status = "PENDING" // In progress
 	}
@@ -757,15 +759,16 @@ func (m *Module) receive(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "purchase order not found"})
 		return
 	}
-	if po.Status != "OPEN" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "purchase order is not OPEN"})
+	// Allow receiving from both OPEN (draft) and SENT status
+	if po.Status != "OPEN" && po.Status != "SENT" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "purchase order cannot be received in current status"})
 		return
 	}
 
 	// Lock the PO to prevent double receive.
 	lockRes, err := m.deps.Mongo.Collection(repo.ColPurchaseOrders).UpdateOne(
 		c.Request.Context(),
-		bson.M{"_id": po.ID, "orgId": orgID, "status": "OPEN"},
+		bson.M{"_id": po.ID, "orgId": orgID, "status": po.Status},
 		bson.M{"$set": bson.M{"status": "RECEIVING", "updatedAt": time.Now().UTC()}},
 	)
 	if err != nil {
@@ -777,12 +780,14 @@ func (m *Module) receive(c *gin.Context) {
 		return
 	}
 
+	originalStatus := po.Status // Save for rollback
+
 	// Ensure the branch still exists.
 	if _, err := m.deps.Repo.GetBranchByOrg(c.Request.Context(), orgID, po.BranchID); err != nil {
 		_, _ = m.deps.Mongo.Collection(repo.ColPurchaseOrders).UpdateOne(
 			c.Request.Context(),
 			bson.M{"_id": po.ID, "orgId": orgID},
-			bson.M{"$set": bson.M{"status": "OPEN", "updatedAt": time.Now().UTC()}},
+			bson.M{"$set": bson.M{"status": originalStatus, "updatedAt": time.Now().UTC()}},
 		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid branchId"})
 		return
@@ -966,18 +971,32 @@ func (m *Module) submit(c *gin.Context) {
 		return
 	}
 
-	// PO is already in OPEN status, just return it
+	// Only OPEN (displayed as DRAFT) orders can be submitted
+	if po.Status != "OPEN" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "only draft orders can be submitted"})
+		return
+	}
+
+	// Update status to SENT (displayed as SENT in response)
+	updated, err := m.deps.Repo.UpdatePurchaseOrderByOrg(c.Request.Context(), orgID, id, bson.M{
+		"status": "SENT",
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to submit purchase order"})
+		return
+	}
+
 	// Get supplier and branch names
 	supplierName := ""
-	if supplier, err := m.deps.Repo.GetSupplierByOrg(c.Request.Context(), orgID, po.SupplierID); err == nil {
+	if supplier, err := m.deps.Repo.GetSupplierByOrg(c.Request.Context(), orgID, updated.SupplierID); err == nil {
 		supplierName = supplier.Name
 	}
 	branchName := ""
-	if branch, err := m.deps.Repo.GetBranchByOrg(c.Request.Context(), orgID, po.BranchID); err == nil {
+	if branch, err := m.deps.Repo.GetBranchByOrg(c.Request.Context(), orgID, updated.BranchID); err == nil {
 		branchName = branch.Name
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": m.poToResponse(po, supplierName, branchName)})
+	c.JSON(http.StatusOK, gin.H{"data": m.poToResponse(updated, supplierName, branchName)})
 }
 
 func (m *Module) duplicate(c *gin.Context) {

@@ -40,6 +40,7 @@ func (m *Module) listInventoryStockLevels(c *gin.Context) {
 	}
 
 	branchID := strings.TrimSpace(c.Query("branchId"))
+	productID := strings.TrimSpace(c.Query("productId"))
 	lowStockOnly := c.Query("lowStockOnly") == "true"
 	outOfStockOnly := c.Query("outOfStockOnly") == "true"
 
@@ -55,6 +56,9 @@ func (m *Module) listInventoryStockLevels(c *gin.Context) {
 	result := make([]enrichedStock, 0, len(all))
 	for _, s := range all {
 		if branchID != "" && s.BranchID != branchID {
+			continue
+		}
+		if productID != "" && s.ProductID != productID {
 			continue
 		}
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Package, Building2 } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { DatePicker } from '@/components/ui/date-picker'
 import { usePurchaseOrder, useCreatePurchaseOrder, useUpdatePurchaseOrder } from '@/features/purchase-orders'
 import { useProducts } from '@/features/products'
 import { useSuppliers } from '@/features/suppliers'
@@ -71,7 +73,7 @@ export function PurchaseOrderFormPage() {
   const [supplierId, setSupplierId] = useState('')
   const [items, setItems] = useState<POLineItem[]>([])
   const [notes, setNotes] = useState('')
-  const [expectedDate, setExpectedDate] = useState('')
+  const [expectedDate, setExpectedDate] = useState<Date | undefined>(undefined)
 
   // Default branchId
   const effectiveBranchId = branchId || branch?.id || branches[0]?.id || ''
@@ -83,7 +85,7 @@ export function PurchaseOrderFormPage() {
       setBranchId(po.branchId)
       setSupplierId(po.supplierId)
       setNotes(po.notes || '')
-      setExpectedDate(po.expectedDeliveryDate?.split('T')[0] || '')
+      setExpectedDate(po.expectedDeliveryDate ? parseISO(po.expectedDeliveryDate) : undefined)
       setItems(
         po.items.map((item) => ({
           productId: item.productId,
@@ -147,7 +149,7 @@ export function PurchaseOrderFormPage() {
         unitCost: item.unitCost,
       })),
       notes: notes || undefined,
-      expectedDeliveryDate: expectedDate || undefined,
+      expectedDeliveryDate: expectedDate ? format(expectedDate, 'yyyy-MM-dd') : undefined,
     }
 
     if (isEditing) {
@@ -228,10 +230,12 @@ export function PurchaseOrderFormPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Expected Date</Label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={expectedDate}
-                    onChange={(e) => setExpectedDate(e.target.value)}
+                    onChange={setExpectedDate}
+                    placeholder="Select expected date"
+                    minDate={new Date()}
+                    id="expected-date"
                   />
                 </div>
               </CardContent>

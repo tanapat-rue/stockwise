@@ -1649,6 +1649,12 @@ func (m *Module) markShipped(c *gin.Context) {
 		return
 	}
 
+	// Order must be confirmed before shipping
+	if txn.Status != "CONFIRMED" && txn.Status != "COMPLETED" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "order must be confirmed before shipping"})
+		return
+	}
+
 	shipping := txn.ShippingInfo
 	if shipping == nil {
 		shipping = &models.ShippingInfo{}

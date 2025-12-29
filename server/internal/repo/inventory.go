@@ -214,3 +214,29 @@ func (r *Repo) AdjustStock(ctx context.Context, orgID, branchID, productID strin
 	}
 	return out, nil
 }
+
+// ProductHasStock checks if a product has any stock (quantity > 0) across all branches
+func (r *Repo) ProductHasStock(ctx context.Context, orgID, productID string) (bool, error) {
+	count, err := r.col(ColStockLevels).CountDocuments(ctx, bson.M{
+		"orgId":     orgID,
+		"productId": productID,
+		"quantity":  bson.M{"$gt": 0},
+	})
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// ProductHasReservations checks if a product has any reserved stock across all branches
+func (r *Repo) ProductHasReservations(ctx context.Context, orgID, productID string) (bool, error) {
+	count, err := r.col(ColStockLevels).CountDocuments(ctx, bson.M{
+		"orgId":     orgID,
+		"productId": productID,
+		"reserved":  bson.M{"$gt": 0},
+	})
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}

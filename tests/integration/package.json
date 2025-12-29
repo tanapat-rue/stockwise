@@ -1,0 +1,14 @@
+{
+  "name": "stockflows-integration-tests",
+  "version": "1.0.0",
+  "description": "Integration tests for Stockflows",
+  "type": "module",
+  "scripts": {
+    "test": "npx tsx stockflows-simulation.test.ts",
+    "test:watch": "npx tsx watch stockflows-simulation.test.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

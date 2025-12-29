@@ -1,0 +1,116 @@
+============================================================
+STOCKFLOWS E-COMMERCE SIMULATION TEST SUITE
+============================================================
+Base URL: http://localhost:9090
+
+
+--- SECTION 1: Authentication ---
+
+[0;32m✓[0m 1.1 Register new merchant account
+[0;32m✓[0m 1.2 Get current user and branch info
+
+--- SECTION 2: Product Catalog Setup ---
+
+[0;32m✓[0m 2.1 Create product: TSHIRT-BLK-S
+[0;32m✓[0m 2.2 Create product: TSHIRT-BLK-M
+[0;32m✓[0m 2.3 Create product: TSHIRT-BLK-L
+[0;32m✓[0m 2.4 Create product: TSHIRT-WHT-S
+[0;32m✓[0m 2.5 Create product: TSHIRT-WHT-M
+[0;32m✓[0m 2.6 Create product: JEANS-BLU-32
+[0;32m✓[0m 2.7 Create product: JEANS-BLU-34
+[0;32m✓[0m 2.8 Create product: CAP-BLK
+
+--- SECTION 3: Suppliers Setup ---
+
+[0;32m✓[0m 3.1 Create supplier: SUP-TEXTILE
+[0;32m✓[0m 3.2 Create supplier: SUP-DENIM
+[0;32m✓[0m 3.3 Create supplier: SUP-ACC
+
+--- SECTION 4: Customers Setup ---
+
+[0;32m✓[0m 4.1 Create customer: CUST-RETAIL
+[0;32m✓[0m 4.2 Create customer: CUST-WHOLESALE
+[0;32m✓[0m 4.3 Create customer: CUST-VIP
+[0;32m✓[0m 4.4 Create customer: CUST-ONLINE
+
+--- SECTION 5: Purchase Order Workflows ---
+
+[0;32m✓[0m 5.1 Create PO for T-Shirts (DRAFT, total=5750000)
+[0;32m✓[0m 5.2 Create PO for Jeans (DRAFT)
+[0;32m✓[0m 5.3 Create PO for Accessories (DRAFT)
+[0;32m✓[0m 5.4 Update PO quantity before sending (total recalculated)
+jq: error (at <stdin>:1): Cannot index number with string "error"
+jq: parse error: Invalid numeric literal at line 1, column 9
+[0;31m✗[0m 5.5 Send PO to supplier: 
+[0;32m✓[0m 5.6 Verify stock is 0 before PO received
+[0;32m✓[0m 5.7 Receive PO (SENT → RECEIVED)
+[0;32m✓[0m 5.8 Verify stock added after PO received (qty=60)
+[0;32m✓[0m 5.9 Send and receive Jeans PO
+[0;32m✓[0m 5.10 Send and receive Accessories PO
+[0;32m✓[0m 5.11 Create and cancel PO before sending
+[0;32m✓[0m 5.12 Cannot cancel already received PO (correctly rejected)
+[0;32m✓[0m 5.13 Create PO with negotiated lower price (total=8800000)
+[0;32m✓[0m 5.14 Receive bulk PO with negotiated price
+[0;32m✓[0m 5.15 Verify all stock levels correct after POs
+
+--- SECTION 6: Sales Order Workflows ---
+
+[0;31m✗[0m 6.1 Create SO: Status=PENDING (expected DRAFT)
+[0;32m✓[0m 6.2 Create SO for wholesale customer
+[0;32m✓[0m 6.3 Create anonymous SO (walk-in customer)
+[0;31m✗[0m 6.4 Stock not reserved in DRAFT: Reserved=10 (expected 0)
+[0;32m✓[0m 6.5 Confirm SO (DRAFT → CONFIRMED)
+[0;31m✗[0m 6.6 Stock reserved after confirm: Reserved=10 (expected 2)
+[0;32m✓[0m 6.7 Confirm wholesale SO
+[0;31m✗[0m 6.8 Total reserved stock: Reserved=10 (expected 22)
+[0;31m✗[0m 6.9 Ship SO: Status=CONFIRMED (expected SHIPPED)
+[0;31m✗[0m 6.10 Deliver SO: Status=CONFIRMED (expected DELIVERED)
+[0;32m✓[0m 6.11 Complete SO (DELIVERED → COMPLETED)
+[0;31m✗[0m 6.12 Stock deducted: Qty=60(118), Reserved=10(20)
+[0;32m✓[0m 6.13 Cancel SO before confirm
+[1;33m⚠[0m DEFECT: Reservation not released after cancelling confirmed SO
+[0;31m✗[0m 6.14 Cancel confirmed SO: Reserved before=10, after=10
+[0;32m✓[0m 6.15 Cannot create SO exceeding stock
+[0;32m✓[0m 6.16 Update SO items before confirm (total recalculated)
+[0;32m✓[0m 6.17 Record payment for order
+[0;32m✓[0m 6.18 Get order statistics (totalOrders=4)
+
+--- SECTION 7: Complex Scenarios ---
+
+[0;32m✓[0m 7.1 Restock scenario: PO after stock runs low (stock: 60 → 110)
+[0;31m✗[0m 7.2 Multiple concurrent orders: Reserved=13 (expected >= 15)
+[0;32m✓[0m 7.3 Complete order lifecycle test
+[0;32m✓[0m 7.4 COGS and profit calculation (revenue=3217400, profit=169600)
+[0;32m✓[0m 7.5 Low stock detection API works
+[0;32m✓[0m 7.6 Inventory listing (found 8 items)
+[0;32m✓[0m 7.7 Order listing with status filter (found 3 completed)
+[0;32m✓[0m 7.8 PO listing with filters (found 6 received)
+[0;32m✓[0m 7.9 Customer order history (found 10 orders)
+[0;31m✗[0m 7.10 Inventory movement tracking: Unknown error
+
+--- SECTION 8: Edge Cases & Error Handling ---
+
+[0;32m✓[0m 8.1 Duplicate SKU correctly rejected
+[0;32m✓[0m 8.2 Invalid product ID correctly rejected
+[0;32m✓[0m 8.3 Negative quantity correctly rejected
+[0;32m✓[0m 8.4 Zero quantity correctly rejected
+[0;32m✓[0m 8.5 Empty items correctly rejected
+[0;32m✓[0m 8.6 Unauthorized access correctly blocked
+[0;32m✓[0m 8.7 Update non-existent order correctly rejected
+[0;32m✓[0m 8.8 Cannot ship DRAFT order (correctly rejected)
+[0;32m✓[0m 8.9 Cannot complete undelivered order (correctly rejected)
+[0;32m✓[0m 8.10 Delete product with stock correctly rejected
+
+============================================================
+TEST SUMMARY
+============================================================
+
+Total Tests: 70
+Passed: [0;32m59[0m (84.2%)
+Failed: [0;31m11[0m
+
+[1;33m--- Defects Found ---[0m
+
+  - Reservation not released after cancelling confirmed SO
+
+============================================================
