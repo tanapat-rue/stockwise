@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { User, Building2, Bell, Palette, Globe, Lock, Sun, Moon, Monitor, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,13 +12,14 @@ import { useSettingsStore, colorThemes } from '@/stores/settings-store'
 
 type Theme = 'light' | 'dark' | 'system'
 
-const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
+const themeOptions: { value: Theme; key: string; icon: typeof Sun }[] = [
+  { value: 'light', key: 'light', icon: Sun },
+  { value: 'dark', key: 'dark', icon: Moon },
+  { value: 'system', key: 'system', icon: Monitor },
 ]
 
 export function SettingsPage() {
+  const { t } = useTranslation()
   const { user, organization } = useAuthStore()
   const { theme, setTheme, colorTheme, setColorTheme, language, setLanguage } = useSettingsStore()
 
@@ -36,8 +38,8 @@ export function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('pages.settings.title')}</h1>
+        <p className="text-muted-foreground">{t('pages.settings.description')}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -48,13 +50,13 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Profile
+                {t('pages.settings.profile')}
               </CardTitle>
-              <CardDescription>Your personal information</CardDescription>
+              <CardDescription>{t('pages.settings.profileDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">{t('common.name')}</Label>
                 <Input
                   id="name"
                   value={profileData.name}
@@ -62,7 +64,7 @@ export function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('common.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -70,7 +72,7 @@ export function SettingsPage() {
                   onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                 />
               </div>
-              <Button>Save Changes</Button>
+              <Button>{t('common.saveChanges')}</Button>
             </CardContent>
           </Card>
 
@@ -79,13 +81,13 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5" />
-                Password
+                {t('pages.settings.password')}
               </CardTitle>
-              <CardDescription>Update your password</CardDescription>
+              <CardDescription>{t('pages.settings.passwordDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="current">Current Password</Label>
+                <Label htmlFor="current">{t('pages.settings.currentPassword')}</Label>
                 <Input
                   id="current"
                   type="password"
@@ -94,7 +96,7 @@ export function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="new">New Password</Label>
+                <Label htmlFor="new">{t('pages.settings.newPassword')}</Label>
                 <Input
                   id="new"
                   type="password"
@@ -103,7 +105,7 @@ export function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm">Confirm New Password</Label>
+                <Label htmlFor="confirm">{t('pages.settings.confirmPassword')}</Label>
                 <Input
                   id="confirm"
                   type="password"
@@ -111,7 +113,7 @@ export function SettingsPage() {
                   onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                 />
               </div>
-              <Button>Update Password</Button>
+              <Button>{t('pages.settings.updatePassword')}</Button>
             </CardContent>
           </Card>
 
@@ -120,23 +122,23 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Organization
+                {t('pages.settings.organization')}
               </CardTitle>
-              <CardDescription>Organization settings</CardDescription>
+              <CardDescription>{t('pages.settings.organizationDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Organization Name</Label>
+                <Label>{t('pages.settings.organizationName')}</Label>
                 <Input value={organization?.name || ''} disabled />
               </div>
               <div className="space-y-2">
-                <Label>Plan</Label>
+                <Label>{t('pages.settings.plan')}</Label>
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-1 rounded bg-primary/10 text-primary text-sm font-medium">
                     {organization?.plan || 'Free'}
                   </span>
                   <Button variant="link" className="p-0 h-auto">
-                    Upgrade
+                    {t('pages.settings.upgrade')}
                   </Button>
                 </div>
               </div>
@@ -151,14 +153,14 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Appearance
+                {t('pages.settings.appearance')}
               </CardTitle>
-              <CardDescription>Customize how the app looks</CardDescription>
+              <CardDescription>{t('pages.settings.appearanceDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Mode Selection */}
               <div className="space-y-3">
-                <Label>Mode</Label>
+                <Label>{t('pages.settings.mode')}</Label>
                 <div className="flex gap-1 rounded-lg bg-muted p-1">
                   {themeOptions.map((option) => (
                     <button
@@ -173,7 +175,7 @@ export function SettingsPage() {
                       )}
                     >
                       <option.icon className="h-4 w-4" />
-                      <span>{option.label}</span>
+                      <span>{t(`header.${option.key}`)}</span>
                     </button>
                   ))}
                 </div>
@@ -181,7 +183,7 @@ export function SettingsPage() {
 
               {/* Color Theme Selection */}
               <div className="space-y-3">
-                <Label>Color Theme</Label>
+                <Label>{t('pages.settings.colorTheme')}</Label>
                 <div className="grid grid-cols-5 gap-2">
                   {colorThemes.map((ct) => (
                     <button
@@ -221,7 +223,7 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="h-5 w-5" />
-                Language
+                {t('pages.settings.language')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -232,8 +234,8 @@ export function SettingsPage() {
                 ]}
                 value={language}
                 onValueChange={(v) => setLanguage(v as 'en' | 'th')}
-                placeholder="Select language"
-                searchPlaceholder="Search language..."
+                placeholder={t('pages.settings.selectLanguage')}
+                searchPlaceholder={t('pages.settings.searchLanguage')}
               />
             </CardContent>
           </Card>
@@ -243,24 +245,24 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Notifications
+                {t('pages.settings.notifications')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Email Notifications</p>
-                    <p className="text-sm text-muted-foreground">Order updates</p>
+                    <p className="font-medium">{t('pages.settings.emailNotifications')}</p>
+                    <p className="text-sm text-muted-foreground">{t('pages.settings.orderUpdates')}</p>
                   </div>
-                  <Button variant="outline" size="sm">On</Button>
+                  <Button variant="outline" size="sm">{t('common.on')}</Button>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Low Stock Alerts</p>
-                    <p className="text-sm text-muted-foreground">Inventory warnings</p>
+                    <p className="font-medium">{t('pages.settings.lowStockAlerts')}</p>
+                    <p className="text-sm text-muted-foreground">{t('pages.settings.inventoryWarnings')}</p>
                   </div>
-                  <Button variant="outline" size="sm">On</Button>
+                  <Button variant="outline" size="sm">{t('common.on')}</Button>
                 </div>
               </div>
             </CardContent>

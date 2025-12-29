@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Eye, Package, XCircle, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,7 @@ const paymentStatusColors: Record<POPaymentStatus, string> = {
 }
 
 export function PurchaseOrdersPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<POStatus | 'all'>('all')
   const [receivingPO, setReceivingPO] = useState<PurchaseOrder | null>(null)
@@ -56,7 +58,7 @@ export function PurchaseOrdersPage() {
   const columns: ColumnDef<PurchaseOrder>[] = [
     {
       accessorKey: 'orderNumber',
-      header: ({ column }) => <SortableHeader column={column}>PO #</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.purchaseOrders.poNumber')}</SortableHeader>,
       cell: ({ row }) => (
         <Link
           to={`/purchase-orders/${row.original.id}/edit`}
@@ -68,40 +70,40 @@ export function PurchaseOrdersPage() {
     },
     {
       accessorKey: 'supplierName',
-      header: ({ column }) => <SortableHeader column={column}>Supplier</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('navigation.suppliers')}</SortableHeader>,
     },
     {
       accessorKey: 'totalAmount',
-      header: ({ column }) => <SortableHeader column={column}>Total</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('common.total')}</SortableHeader>,
       cell: ({ row }) => formatCurrency(row.getValue('totalAmount')),
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('common.status'),
       cell: ({ row }) => {
         const status = row.getValue('status') as POStatus
         return (
           <Badge variant={statusColors[status] as 'default'}>
-            {status.replace('_', ' ')}
+            {t(`status.${status.toLowerCase()}`)}
           </Badge>
         )
       },
     },
     {
       accessorKey: 'paymentStatus',
-      header: 'Payment',
+      header: t('pages.orders.payment'),
       cell: ({ row }) => {
         const status = row.getValue('paymentStatus') as POPaymentStatus
         return (
           <Badge variant={paymentStatusColors[status] as 'default'}>
-            {status}
+            {t(`status.${status.toLowerCase()}`)}
           </Badge>
         )
       },
     },
     {
       accessorKey: 'expectedDeliveryDate',
-      header: 'Expected',
+      header: t('pages.purchaseOrders.expected'),
       cell: ({ row }) => {
         const date = row.getValue('expectedDeliveryDate') as string
         return date ? formatDate(date) : '-'
@@ -109,7 +111,7 @@ export function PurchaseOrdersPage() {
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => <SortableHeader column={column}>Created</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.purchaseOrders.created')}</SortableHeader>,
       cell: ({ row }) => formatDate(row.getValue('createdAt')),
     },
     {
@@ -131,18 +133,18 @@ export function PurchaseOrdersPage() {
               <DropdownMenuItem asChild>
                 <Link to={`/purchase-orders/${po.id}/edit`}>
                   <Eye className="mr-2 h-4 w-4" />
-                  View Details
+                  {t('common.viewDetails')}
                 </Link>
               </DropdownMenuItem>
               {canReceive && (
                 <DropdownMenuItem onClick={() => setReceivingPO(po)}>
                   <Package className="mr-2 h-4 w-4" />
-                  Receive Items
+                  {t('pages.purchaseOrders.receiveItems')}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => duplicatePO.mutate(po.id)}>
                 <Copy className="mr-2 h-4 w-4" />
-                Duplicate
+                {t('common.duplicate')}
               </DropdownMenuItem>
               {canCancel && (
                 <>
@@ -152,7 +154,7 @@ export function PurchaseOrdersPage() {
                     onClick={() => setCancellingPO(po)}
                   >
                     <XCircle className="mr-2 h-4 w-4" />
-                    Cancel
+                    {t('pages.purchaseOrders.cancelPO')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -168,13 +170,13 @@ export function PurchaseOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Purchase Orders</h1>
-          <p className="text-muted-foreground">Manage supplier orders</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.purchaseOrders.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.purchaseOrders.description')}</p>
         </div>
         <Button asChild>
           <Link to="/purchase-orders/new">
             <Plus className="mr-2 h-4 w-4" />
-            New PO
+            {t('pages.purchaseOrders.newPO')}
           </Link>
         </Button>
       </div>
@@ -182,23 +184,23 @@ export function PurchaseOrdersPage() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <Input
-          placeholder="Search POs..."
+          placeholder={t('pages.purchaseOrders.searchPOs')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
         <Combobox
           options={[
-            { value: 'all', label: 'All Status' },
-            { value: 'DRAFT', label: 'Draft' },
-            { value: 'PENDING', label: 'Pending' },
-            { value: 'RECEIVED', label: 'Received' },
-            { value: 'CANCELLED', label: 'Cancelled' },
+            { value: 'all', label: t('status.all') },
+            { value: 'DRAFT', label: t('status.draft') },
+            { value: 'PENDING', label: t('status.pending') },
+            { value: 'RECEIVED', label: t('status.received') },
+            { value: 'CANCELLED', label: t('status.cancelled') },
           ]}
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as POStatus | 'all')}
-          placeholder="All Status"
-          searchPlaceholder="Search status..."
+          placeholder={t('status.all')}
+          searchPlaceholder={t('pages.orders.searchStatus')}
           className="w-44"
         />
       </div>
@@ -209,7 +211,7 @@ export function PurchaseOrdersPage() {
         data={purchaseOrders}
         isLoading={isLoading}
         emptyPreset="purchase-orders"
-        emptyMessage="Create purchase orders to replenish your inventory."
+        emptyMessage={t('pages.purchaseOrders.emptyMessage')}
       />
 
       {/* Receive Dialog */}
@@ -224,10 +226,10 @@ export function PurchaseOrdersPage() {
         open={!!cancellingPO}
         onOpenChange={() => setCancellingPO(null)}
         variant="danger"
-        title="Cancel Purchase Order?"
-        description={`Are you sure you want to cancel ${cancellingPO?.orderNumber}? This action cannot be undone.`}
-        confirmText="Cancel PO"
-        cancelText="Keep PO"
+        title={t('pages.purchaseOrders.cancelPOConfirm')}
+        description={t('pages.purchaseOrders.cancelPODescription', { orderNumber: cancellingPO?.orderNumber })}
+        confirmText={t('pages.purchaseOrders.cancelPO')}
+        cancelText={t('pages.purchaseOrders.keepPO')}
         onConfirm={async () => {
           if (cancellingPO) {
             await cancelPO.mutateAsync({ id: cancellingPO.id })

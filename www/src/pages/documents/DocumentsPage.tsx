@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText, Download, Eye, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,26 +19,27 @@ interface Document {
   total?: number
 }
 
-const documentTypes: Record<DocumentType, { label: string; color: string }> = {
-  INVOICE: { label: 'Invoice', color: 'default' },
-  RECEIPT: { label: 'Receipt', color: 'success' },
-  PO: { label: 'Purchase Order', color: 'secondary' },
-  DELIVERY_NOTE: { label: 'Delivery Note', color: 'warning' },
-  RETURN: { label: 'Return', color: 'destructive' },
-}
-
-const typeOptions = [
-  { value: 'all', label: 'All Types' },
-  { value: 'INVOICE', label: 'Invoices' },
-  { value: 'RECEIPT', label: 'Receipts' },
-  { value: 'PO', label: 'Purchase Orders' },
-  { value: 'DELIVERY_NOTE', label: 'Delivery Notes' },
-  { value: 'RETURN', label: 'Returns' },
-]
-
 export function DocumentsPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<DocumentType | 'all'>('all')
+
+  const documentTypes: Record<DocumentType, { labelKey: string; color: string }> = {
+    INVOICE: { labelKey: 'invoice', color: 'default' },
+    RECEIPT: { labelKey: 'receipt', color: 'success' },
+    PO: { labelKey: 'purchaseOrder', color: 'secondary' },
+    DELIVERY_NOTE: { labelKey: 'deliveryNote', color: 'warning' },
+    RETURN: { labelKey: 'return', color: 'destructive' },
+  }
+
+  const typeOptions = [
+    { value: 'all', label: t('status.allTypes') },
+    { value: 'INVOICE', label: t('pages.documents.invoice') },
+    { value: 'RECEIPT', label: t('pages.documents.receipt') },
+    { value: 'PO', label: t('pages.documents.purchaseOrder') },
+    { value: 'DELIVERY_NOTE', label: t('pages.documents.deliveryNote') },
+    { value: 'RETURN', label: t('pages.documents.return') },
+  ]
 
   // Mock data
   const documents: Document[] = [
@@ -60,8 +62,8 @@ export function DocumentsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Documents</h1>
-        <p className="text-muted-foreground">View and download business documents</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('pages.documents.title')}</h1>
+        <p className="text-muted-foreground">{t('pages.documents.description')}</p>
       </div>
 
       {/* Filters */}
@@ -69,7 +71,7 @@ export function DocumentsPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search documents..."
+            placeholder={t('pages.documents.searchDocuments')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -79,8 +81,8 @@ export function DocumentsPage() {
           options={typeOptions}
           value={typeFilter}
           onValueChange={(v) => setTypeFilter(v as DocumentType | 'all')}
-          placeholder="All Types"
-          searchPlaceholder="Search type..."
+          placeholder={t('status.allTypes')}
+          searchPlaceholder={t('pages.documents.searchType')}
           className="w-44"
         />
       </div>
@@ -101,7 +103,7 @@ export function DocumentsPage() {
                   </div>
                 </div>
                 <Badge variant={documentTypes[doc.type].color as 'default'}>
-                  {documentTypes[doc.type].label}
+                  {t(`pages.documents.${documentTypes[doc.type].labelKey}`)}
                 </Badge>
               </div>
             </CardHeader>
@@ -111,10 +113,10 @@ export function DocumentsPage() {
                   {formatDate(doc.createdAt)}
                 </span>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" title="View">
+                  <Button variant="ghost" size="icon" title={t('common.viewDetails')}>
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" title="Download">
+                  <Button variant="ghost" size="icon" title={t('common.download')}>
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
@@ -128,7 +130,7 @@ export function DocumentsPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No documents found</p>
+            <p className="text-muted-foreground">{t('pages.documents.noDocuments')}</p>
           </CardContent>
         </Card>
       )}

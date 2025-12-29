@@ -1,12 +1,16 @@
 import { Outlet } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui-store'
+import { useLanguageSync } from '@/hooks/useLanguageSync'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { CommandPalette } from './CommandPalette'
 
 export function Layout() {
   const { sidebarCollapsed } = useUIStore()
+
+  // Sync i18n language with settings store
+  useLanguageSync()
 
   return (
     <div className="min-h-screen bg-background">

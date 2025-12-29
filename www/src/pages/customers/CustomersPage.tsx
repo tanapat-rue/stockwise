@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Pencil, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import type { Customer, CreateCustomerRequest } from '@/features/customers'
 import { formatCurrency } from '@/lib/utils'
 
 export function CustomersPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
@@ -39,14 +41,14 @@ export function CustomersPage() {
   const columns: ColumnDef<Customer>[] = [
     {
       accessorKey: 'code',
-      header: 'Code',
+      header: t('common.code'),
       cell: ({ row }) => (
         <span className="font-mono text-sm">{row.getValue('code') || '-'}</span>
       ),
     },
     {
       accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('common.name')}</SortableHeader>,
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -63,16 +65,16 @@ export function CustomersPage() {
     },
     {
       accessorKey: 'phone',
-      header: 'Phone',
+      header: t('common.phone'),
       cell: ({ row }) => row.getValue('phone') || '-',
     },
     {
       accessorKey: 'totalOrders',
-      header: ({ column }) => <SortableHeader column={column}>Orders</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.customers.orders')}</SortableHeader>,
     },
     {
       accessorKey: 'totalSpent',
-      header: ({ column }) => <SortableHeader column={column}>Total Spent</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.customers.totalSpent')}</SortableHeader>,
       cell: ({ row }) => formatCurrency(row.getValue('totalSpent')),
     },
     {
@@ -87,14 +89,14 @@ export function CustomersPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setEditingCustomer(row.original)}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit
+              {t('common.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => setDeletingCustomer(row.original)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {t('common.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -128,18 +130,18 @@ export function CustomersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer database</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.customers.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.customers.description')}</p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Customer
+          {t('pages.customers.addCustomer')}
         </Button>
       </div>
 
       {/* Search */}
       <Input
-        placeholder="Search customers..."
+        placeholder={t('pages.customers.searchCustomers')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-sm"
@@ -151,7 +153,7 @@ export function CustomersPage() {
         data={customers}
         isLoading={isLoading}
         emptyPreset="customers"
-        emptyMessage="Your customer list is empty. Add your first customer."
+        emptyMessage={t('pages.customers.emptyMessage')}
       />
 
       {/* Create/Edit Dialog */}
@@ -172,21 +174,21 @@ export function CustomersPage() {
       <Dialog open={!!deletingCustomer} onOpenChange={() => setDeletingCustomer(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Customer</DialogTitle>
+            <DialogTitle>{t('pages.customers.deleteCustomer')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deletingCustomer?.name}"?
+              {t('pages.customers.deleteConfirm', { name: deletingCustomer?.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeletingCustomer(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               loading={deleteCustomer.isPending}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -208,6 +210,7 @@ function CustomerFormDialog({
   onSubmit: (data: CreateCustomerRequest) => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<CreateCustomerRequest>({
     name: customer?.name || '',
     email: customer?.email || '',
@@ -224,11 +227,11 @@ function CustomerFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{customer ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
+          <DialogTitle>{customer ? t('pages.customers.editCustomer') : t('pages.customers.addCustomer')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t('common.name')}</Label>
             <Input
               id="name"
               value={formData.name}
@@ -237,7 +240,7 @@ function CustomerFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('common.email')}</Label>
             <Input
               id="email"
               type="email"
@@ -246,7 +249,7 @@ function CustomerFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">{t('common.phone')}</Label>
             <Input
               id="phone"
               value={formData.phone}
@@ -254,7 +257,7 @@ function CustomerFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">{t('common.address')}</Label>
             <Input
               id="address"
               value={formData.address}
@@ -263,10 +266,10 @@ function CustomerFormDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={isLoading}>
-              {customer ? 'Update' : 'Create'}
+              {customer ? t('common.update') : t('common.create')}
             </Button>
           </DialogFooter>
         </form>

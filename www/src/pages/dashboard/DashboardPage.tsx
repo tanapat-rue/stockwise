@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Package,
   ShoppingCart,
@@ -15,6 +16,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { useAuthStore } from '@/stores/auth-store'
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const { organization } = useAuthStore()
 
   // Mock data - replace with actual API calls
@@ -59,47 +61,47 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('pages.dashboard.title')}</h1>
         <p className="text-muted-foreground">
-          Welcome back to {organization?.name || 'StockFlows'}
+          {t('pages.dashboard.welcome', { name: organization?.name || 'StockFlows' })}
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Products"
+          title={t('pages.dashboard.totalProducts')}
           value={stats.totalProducts.toLocaleString()}
           icon={<Package className="h-4 w-4" />}
-          description="Active products in catalog"
+          description={t('pages.dashboard.activeProducts')}
         />
         <StatCard
-          title="Total Orders"
+          title={t('pages.dashboard.totalOrders')}
           value={stats.totalOrders}
           icon={<ShoppingCart className="h-4 w-4" />}
           description={
             <span className="flex items-center text-green-600">
               <ArrowUpRight className="mr-1 h-3 w-3" />
-              {stats.ordersChange}% from last month
+              {t('pages.dashboard.fromLastMonth', { change: stats.ordersChange })}
             </span>
           }
         />
         <StatCard
-          title="Revenue"
+          title={t('pages.dashboard.revenue')}
           value={`฿${(stats.revenue / 100).toLocaleString()}`}
           icon={<TrendingUp className="h-4 w-4" />}
           description={
             <span className="flex items-center text-green-600">
               <ArrowUpRight className="mr-1 h-3 w-3" />
-              {stats.revenueChange}% from last month
+              {t('pages.dashboard.fromLastMonth', { change: stats.revenueChange })}
             </span>
           }
         />
         <StatCard
-          title="Low Stock Alerts"
+          title={t('pages.dashboard.lowStockAlerts')}
           value={stats.lowStockItems}
           icon={<AlertTriangle className="h-4 w-4" />}
-          description="Items below reorder point"
+          description={t('pages.dashboard.itemsBelowReorder')}
           className={stats.lowStockItems > 0 ? 'border-orange-200 bg-orange-50' : ''}
         />
       </div>
@@ -110,11 +112,11 @@ export function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Latest customer orders</CardDescription>
+              <CardTitle>{t('pages.dashboard.recentOrders')}</CardTitle>
+              <CardDescription>{t('pages.dashboard.latestOrders')}</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/orders">View All</Link>
+              <Link to="/orders">{t('common.viewAll')}</Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -132,7 +134,7 @@ export function DashboardPage() {
                     <span className="font-medium">
                       ฿{(order.total / 100).toLocaleString()}
                     </span>
-                    <Badge variant={getStatusColor(order.status)}>{order.status}</Badge>
+                    <Badge variant={getStatusColor(order.status)}>{t(`status.${order.status.toLowerCase()}`)}</Badge>
                   </div>
                 </div>
               ))}
@@ -146,12 +148,12 @@ export function DashboardPage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
-                Low Stock Items
+                {t('pages.dashboard.lowStockItems')}
               </CardTitle>
-              <CardDescription>Items needing restock</CardDescription>
+              <CardDescription>{t('pages.dashboard.itemsNeedingRestock')}</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/stock">View All</Link>
+              <Link to="/stock">{t('common.viewAll')}</Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -166,16 +168,16 @@ export function DashboardPage() {
                     <p className="text-sm text-muted-foreground">{item.sku}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium text-orange-600">{item.quantity} left</p>
+                    <p className="font-medium text-orange-600">{item.quantity} {t('common.left')}</p>
                     <p className="text-sm text-muted-foreground">
-                      Reorder at {item.reorderPoint}
+                      {t('pages.dashboard.reorderAt', { point: item.reorderPoint })}
                     </p>
                   </div>
                 </div>
               ))}
               <Button className="w-full" variant="outline">
                 <Truck className="mr-2 h-4 w-4" />
-                Create Quick PO
+                {t('pages.dashboard.createQuickPO')}
               </Button>
             </div>
           </CardContent>
@@ -185,33 +187,33 @@ export function DashboardPage() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
+          <CardTitle>{t('pages.dashboard.quickActions')}</CardTitle>
+          <CardDescription>{t('pages.dashboard.commonTasks')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Button variant="outline" className="h-auto flex-col py-4" asChild>
               <Link to="/orders/new">
                 <ShoppingCart className="mb-2 h-6 w-6" />
-                <span>New Order</span>
+                <span>{t('pages.dashboard.newOrder')}</span>
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col py-4" asChild>
               <Link to="/purchase-orders/new">
                 <Truck className="mb-2 h-6 w-6" />
-                <span>New Purchase Order</span>
+                <span>{t('pages.dashboard.newPurchaseOrder')}</span>
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col py-4" asChild>
               <Link to="/products">
                 <Package className="mb-2 h-6 w-6" />
-                <span>Manage Products</span>
+                <span>{t('pages.dashboard.manageProducts')}</span>
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col py-4" asChild>
               <Link to="/customers">
                 <Users className="mb-2 h-6 w-6" />
-                <span>View Customers</span>
+                <span>{t('pages.dashboard.viewCustomers')}</span>
               </Link>
             </Button>
           </div>

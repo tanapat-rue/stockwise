@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { AlertTriangle, Package, Plus, Minus, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import { useStock, useAdjustStock } from '@/features/inventory'
 import type { StockLevel } from '@/features/inventory'
 
 export function StockPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [showLowStock, setShowLowStock] = useState(false)
   const [adjustingItem, setAdjustingItem] = useState<StockLevel | null>(null)
@@ -39,14 +41,14 @@ export function StockPage() {
   const columns: ColumnDef<StockLevel>[] = [
     {
       accessorKey: 'productSku',
-      header: ({ column }) => <SortableHeader column={column}>SKU</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.products.sku')}</SortableHeader>,
       cell: ({ row }) => (
         <span className="font-mono text-sm">{row.getValue('productSku')}</span>
       ),
     },
     {
       accessorKey: 'productName',
-      header: ({ column }) => <SortableHeader column={column}>Product</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.stock.product')}</SortableHeader>,
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -58,7 +60,7 @@ export function StockPage() {
     },
     {
       accessorKey: 'quantity',
-      header: ({ column }) => <SortableHeader column={column}>On Hand</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.stock.onHand')}</SortableHeader>,
       cell: ({ row }) => {
         const qty = row.getValue('quantity') as number
         const isLow = row.original.isLowStock
@@ -72,14 +74,14 @@ export function StockPage() {
     },
     {
       accessorKey: 'reserved',
-      header: 'Reserved',
+      header: t('pages.stock.reserved'),
       cell: ({ row }) => (
         <span className="text-muted-foreground">{row.getValue('reserved')}</span>
       ),
     },
     {
       accessorKey: 'availableQuantity',
-      header: ({ column }) => <SortableHeader column={column}>Available</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.stock.available')}</SortableHeader>,
       cell: ({ row }) => {
         const available = row.getValue('availableQuantity') as number
         return (
@@ -91,7 +93,7 @@ export function StockPage() {
     },
     {
       accessorKey: 'minStock',
-      header: 'Reorder Point',
+      header: t('pages.stock.reorderPoint'),
       cell: ({ row }) => row.getValue('minStock'),
     },
     {
@@ -111,7 +113,7 @@ export function StockPage() {
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Stock
+              {t('pages.stock.addStock')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
@@ -120,7 +122,7 @@ export function StockPage() {
               }}
             >
               <Minus className="mr-2 h-4 w-4" />
-              Subtract Stock
+              {t('pages.stock.subtractStock')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -158,13 +160,13 @@ export function StockPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stock Levels</h1>
-          <p className="text-muted-foreground">Monitor and manage inventory</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.stock.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.stock.description')}</p>
         </div>
         {lowStockCount > 0 && (
           <Badge variant="warning" className="text-base px-3 py-1">
             <AlertTriangle className="mr-2 h-4 w-4" />
-            {lowStockCount} items low
+            {t('pages.stock.itemsLow', { count: lowStockCount })}
           </Badge>
         )}
       </div>
@@ -172,7 +174,7 @@ export function StockPage() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <Input
-          placeholder="Search products..."
+          placeholder={t('pages.stock.searchProducts')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
@@ -182,7 +184,7 @@ export function StockPage() {
           onClick={() => setShowLowStock(!showLowStock)}
         >
           <AlertTriangle className="mr-2 h-4 w-4" />
-          Low Stock Only
+          {t('pages.stock.lowStockOnly')}
         </Button>
       </div>
 
@@ -192,7 +194,7 @@ export function StockPage() {
         data={stockLevels}
         isLoading={isLoading}
         emptyPreset="inventory"
-        emptyMessage="Add products and stock to see inventory information."
+        emptyMessage={t('pages.stock.emptyMessage')}
       />
 
       {/* Adjustment Dialog */}
@@ -200,42 +202,42 @@ export function StockPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {adjustmentType === 'add' ? 'Add Stock' : 'Subtract Stock'}
+              {adjustmentType === 'add' ? t('pages.stock.addStock') : t('pages.stock.subtractStock')}
             </DialogTitle>
             <DialogDescription>
-              {adjustmentType === 'add' ? 'Add' : 'Remove'} stock for{' '}
+              {adjustmentType === 'add' ? t('pages.stock.addStockFor') : t('pages.stock.subtractStockFor')}{' '}
               <strong>{adjustingItem?.productName}</strong>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-4">
-              <div className="text-sm text-muted-foreground">Current quantity:</div>
+              <div className="text-sm text-muted-foreground">{t('pages.stock.currentQuantity')}</div>
               <Badge variant="outline">{adjustingItem?.quantity}</Badge>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
+              <Label htmlFor="quantity">{t('common.quantity')}</Label>
               <Input
                 id="quantity"
                 type="number"
                 min="1"
                 value={adjustmentQty}
                 onChange={(e) => setAdjustmentQty(e.target.value)}
-                placeholder="Enter quantity"
+                placeholder={t('pages.stock.enterQuantity')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason</Label>
+              <Label htmlFor="reason">{t('common.reason')}</Label>
               <Input
                 id="reason"
                 value={adjustmentReason}
                 onChange={(e) => setAdjustmentReason(e.target.value)}
-                placeholder="e.g., Physical count adjustment"
+                placeholder={t('pages.stock.reasonPlaceholder')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustingItem(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant={adjustmentType === 'subtract' ? 'destructive' : 'default'}
@@ -243,7 +245,7 @@ export function StockPage() {
               loading={adjustStock.isPending}
               disabled={!adjustmentQty || !adjustmentReason}
             >
-              {adjustmentType === 'add' ? 'Add' : 'Subtract'} Stock
+              {adjustmentType === 'add' ? t('pages.stock.addStock') : t('pages.stock.subtractStock')}
             </Button>
           </DialogFooter>
         </DialogContent>

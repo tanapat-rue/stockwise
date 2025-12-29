@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Pencil, Trash2, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import type { Product, CreateProductRequest } from '@/features/products'
 import { formatCurrency } from '@/lib/utils'
 
 export function ProductsPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -39,14 +41,14 @@ export function ProductsPage() {
   const columns: ColumnDef<Product>[] = [
     {
       accessorKey: 'sku',
-      header: ({ column }) => <SortableHeader column={column}>SKU</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.products.sku')}</SortableHeader>,
       cell: ({ row }) => (
         <span className="font-mono text-sm">{row.getValue('sku')}</span>
       ),
     },
     {
       accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('common.name')}</SortableHeader>,
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -63,7 +65,7 @@ export function ProductsPage() {
     },
     {
       accessorKey: 'price',
-      header: ({ column }) => <SortableHeader column={column}>Price</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('common.price')}</SortableHeader>,
       cell: ({ row }) => formatCurrency(row.getValue('price')),
     },
     {
@@ -78,14 +80,14 @@ export function ProductsPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setEditingProduct(row.original)}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit
+              {t('common.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => setDeletingProduct(row.original)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {t('common.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -119,19 +121,19 @@ export function ProductsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-          <p className="text-muted-foreground">Manage your product catalog</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.products.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.products.description')}</p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Product
+          {t('pages.products.addProduct')}
         </Button>
       </div>
 
       {/* Search */}
       <div className="flex items-center gap-4">
         <Input
-          placeholder="Search products..."
+          placeholder={t('pages.products.searchProducts')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
@@ -144,7 +146,7 @@ export function ProductsPage() {
         data={products}
         isLoading={isLoading}
         emptyPreset="products"
-        emptyMessage="Get started by adding your first product to the catalog."
+        emptyMessage={t('pages.products.emptyMessage')}
       />
 
       {/* Create/Edit Dialog */}
@@ -165,22 +167,21 @@ export function ProductsPage() {
       <Dialog open={!!deletingProduct} onOpenChange={() => setDeletingProduct(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Product</DialogTitle>
+            <DialogTitle>{t('pages.products.deleteProduct')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deletingProduct?.name}"? This action cannot be
-              undone.
+              {t('pages.products.deleteConfirm', { name: deletingProduct?.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeletingProduct(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               loading={deleteProduct.isPending}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -203,6 +204,7 @@ function ProductFormDialog({
   onSubmit: (data: CreateProductRequest) => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<CreateProductRequest>({
     sku: '',
     name: '',
@@ -243,14 +245,14 @@ function ProductFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{product ? 'Edit Product' : 'Create Product'}</DialogTitle>
+          <DialogTitle>{product ? t('pages.products.editProduct') : t('pages.products.createProduct')}</DialogTitle>
           <DialogDescription>
-            {product ? 'Update the product details below.' : 'Add a new product to your catalog.'}
+            {product ? t('pages.products.updateDescription') : t('pages.products.createDescription')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="sku">SKU</Label>
+            <Label htmlFor="sku">{t('pages.products.sku')}</Label>
             <Input
               id="sku"
               value={formData.sku}
@@ -260,26 +262,26 @@ function ProductFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t('common.name')}</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Product Name"
+              placeholder={t('common.name')}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">{t('pages.products.category')}</Label>
             <Input
               id="category"
               value={formData.category || ''}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              placeholder="Electronics, Clothing, etc."
+              placeholder={t('pages.products.categoryPlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price (Baht)</Label>
+            <Label htmlFor="price">{t('pages.products.priceBaht')}</Label>
             <Input
               id="price"
               type="number"
@@ -293,20 +295,20 @@ function ProductFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('common.description')}</Label>
             <Input
               id="description"
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Product description..."
+              placeholder={t('pages.products.descriptionPlaceholder')}
             />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={isLoading}>
-              {product ? 'Update' : 'Create'}
+              {product ? t('common.update') : t('common.create')}
             </Button>
           </DialogFooter>
         </form>

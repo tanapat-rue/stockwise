@@ -41,6 +41,7 @@ func (m *Module) listInventoryStockLevels(c *gin.Context) {
 
 	branchID := strings.TrimSpace(c.Query("branchId"))
 	productID := strings.TrimSpace(c.Query("productId"))
+	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
 	lowStockOnly := c.Query("lowStockOnly") == "true"
 	outOfStockOnly := c.Query("outOfStockOnly") == "true"
 
@@ -62,6 +63,22 @@ func (m *Module) listInventoryStockLevels(c *gin.Context) {
 			continue
 		}
 
+		// Get product info for search matching
+		var productName, productSku string
+		if p, ok := productMap[s.ProductID]; ok {
+			productName = p.Name
+			productSku = p.SKU
+		}
+
+		// Search filter - match against product name or SKU
+		if search != "" {
+			nameMatch := strings.Contains(strings.ToLower(productName), search)
+			skuMatch := strings.Contains(strings.ToLower(productSku), search)
+			if !nameMatch && !skuMatch {
+				continue
+			}
+		}
+
 		available := s.Quantity - s.Reserved
 		isLow := s.Quantity > 0 && s.Quantity <= s.MinStock
 		isOut := s.Quantity <= 0
@@ -78,10 +95,8 @@ func (m *Module) listInventoryStockLevels(c *gin.Context) {
 			AvailableQuantity: available,
 			IsLowStock:        isLow,
 			IsOutOfStock:      isOut,
-		}
-		if p, ok := productMap[s.ProductID]; ok {
-			es.ProductName = p.Name
-			es.ProductSku = p.SKU
+			ProductName:       productName,
+			ProductSku:        productSku,
 		}
 		result = append(result, es)
 	}

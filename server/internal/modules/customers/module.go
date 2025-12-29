@@ -46,6 +46,22 @@ func (m *Module) list(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list customers"})
 		return
 	}
+
+	// Search filter
+	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
+	if search != "" {
+		filtered := make([]models.Customer, 0, len(customers))
+		for _, cust := range customers {
+			nameMatch := strings.Contains(strings.ToLower(cust.Name), search)
+			emailMatch := strings.Contains(strings.ToLower(cust.Email), search)
+			phoneMatch := strings.Contains(strings.ToLower(cust.Phone), search)
+			if nameMatch || emailMatch || phoneMatch {
+				filtered = append(filtered, cust)
+			}
+		}
+		customers = filtered
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"data": customers,
 		"meta": gin.H{

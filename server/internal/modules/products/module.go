@@ -53,6 +53,22 @@ func (m *Module) list(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list products"})
 		return
 	}
+
+	// Search filter
+	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
+	if search != "" {
+		filtered := make([]models.Product, 0, len(products))
+		for _, p := range products {
+			nameMatch := strings.Contains(strings.ToLower(p.Name), search)
+			skuMatch := strings.Contains(strings.ToLower(p.SKU), search)
+			categoryMatch := strings.Contains(strings.ToLower(p.Category), search)
+			if nameMatch || skuMatch || categoryMatch {
+				filtered = append(filtered, p)
+			}
+		}
+		products = filtered
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"data": products,
 		"meta": gin.H{

@@ -64,6 +64,7 @@ func (m *Module) list(c *gin.Context) {
 	// Parse query params
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
 
 	filter := bson.M{}
 	if t := c.Query("type"); t != "" {
@@ -74,6 +75,16 @@ func (m *Module) list(c *gin.Context) {
 	}
 	if branchID := c.Query("branchId"); branchID != "" {
 		filter["branchId"] = branchID
+	}
+
+	// Add search to filter if provided
+	if search != "" {
+		filter["$or"] = []bson.M{
+			{"referenceNo": bson.M{"$regex": search, "$options": "i"}},
+			{"customerName": bson.M{"$regex": search, "$options": "i"}},
+			{"supplierName": bson.M{"$regex": search, "$options": "i"}},
+			{"originalRefNo": bson.M{"$regex": search, "$options": "i"}},
+		}
 	}
 
 	returns, total, err := m.deps.Repo.ListReturnsByOrg(c.Request.Context(), orgID, filter, page, limit)

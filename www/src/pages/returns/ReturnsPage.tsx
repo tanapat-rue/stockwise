@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Eye, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ const statusColors: Record<ReturnStatus, string> = {
 }
 
 export function ReturnsPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReturnStatus | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<ReturnType | 'all'>('all')
@@ -47,26 +49,26 @@ export function ReturnsPage() {
   const columns: ColumnDef<Return>[] = [
     {
       accessorKey: 'refNo',
-      header: ({ column }) => <SortableHeader column={column}>Ref #</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.returns.refNumber')}</SortableHeader>,
       cell: ({ row }) => (
         <span className="font-medium text-primary">{row.getValue('refNo')}</span>
       ),
     },
     {
       accessorKey: 'type',
-      header: 'Type',
+      header: t('pages.returns.type'),
       cell: ({ row }) => {
         const type = row.getValue('type') as ReturnType
         return (
           <Badge variant={type === 'CUSTOMER' ? 'default' : 'secondary'}>
-            {type}
+            {t(`status.${type.toLowerCase()}`)}
           </Badge>
         )
       },
     },
     {
       id: 'reference',
-      header: 'Reference',
+      header: t('pages.returns.reference'),
       cell: ({ row }) => {
         const ret = row.original
         if (ret.type === 'CUSTOMER') {
@@ -77,24 +79,24 @@ export function ReturnsPage() {
     },
     {
       id: 'items',
-      header: 'Items',
+      header: t('pages.purchaseOrders.items'),
       cell: ({ row }) => row.original.items.length,
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('common.status'),
       cell: ({ row }) => {
         const status = row.getValue('status') as ReturnStatus
         return (
           <Badge variant={statusColors[status] as 'default'}>
-            {status.replace('_', ' ')}
+            {t(`status.${status.toLowerCase()}`)}
           </Badge>
         )
       },
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => <SortableHeader column={column}>Created</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.purchaseOrders.created')}</SortableHeader>,
       cell: ({ row }) => formatDate(row.getValue('createdAt')),
     },
     {
@@ -111,24 +113,24 @@ export function ReturnsPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem>
                 <Eye className="mr-2 h-4 w-4" />
-                View Details
+                {t('common.viewDetails')}
               </DropdownMenuItem>
               {ret.status === 'REQUESTED' && (
                 <>
                   <DropdownMenuItem onClick={() => approveReturn.mutate(ret.id)}>
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Approve
+                    {t('pages.returns.approve')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => rejectReturn.mutate({ id: ret.id })}>
                     <XCircle className="mr-2 h-4 w-4" />
-                    Reject
+                    {t('pages.returns.reject')}
                   </DropdownMenuItem>
                 </>
               )}
               {ret.status === 'APPROVED' && ret.type === 'CUSTOMER' && (
                 <DropdownMenuItem onClick={() => receiveReturn.mutate(ret.id)}>
                   <RotateCcw className="mr-2 h-4 w-4" />
-                  Receive Items
+                  {t('pages.returns.receiveItems')}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -143,12 +145,12 @@ export function ReturnsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Returns</h1>
-          <p className="text-muted-foreground">Manage customer and supplier returns</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.returns.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.returns.description')}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          New Return
+          {t('pages.returns.newReturn')}
         </Button>
       </div>
 
@@ -157,36 +159,36 @@ export function ReturnsPage() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <Input
-          placeholder="Search returns..."
+          placeholder={t('pages.returns.searchReturns')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
         <Combobox
           options={[
-            { value: 'all', label: 'All Types' },
-            { value: 'CUSTOMER', label: 'Customer' },
-            { value: 'SUPPLIER', label: 'Supplier' },
+            { value: 'all', label: t('status.allTypes') },
+            { value: 'CUSTOMER', label: t('status.customer') },
+            { value: 'SUPPLIER', label: t('status.supplier') },
           ]}
           value={typeFilter}
           onValueChange={(value) => setTypeFilter(value as ReturnType | 'all')}
-          placeholder="All Types"
-          searchPlaceholder="Search type..."
+          placeholder={t('status.allTypes')}
+          searchPlaceholder={t('pages.returns.searchType')}
           className="w-36"
         />
         <Combobox
           options={[
-            { value: 'all', label: 'All Status' },
-            { value: 'REQUESTED', label: 'Requested' },
-            { value: 'APPROVED', label: 'Approved' },
-            { value: 'REJECTED', label: 'Rejected' },
-            { value: 'RECEIVED', label: 'Received' },
-            { value: 'COMPLETED', label: 'Completed' },
+            { value: 'all', label: t('status.all') },
+            { value: 'REQUESTED', label: t('status.requested') },
+            { value: 'APPROVED', label: t('status.approved') },
+            { value: 'REJECTED', label: t('status.rejected') },
+            { value: 'RECEIVED', label: t('status.received') },
+            { value: 'COMPLETED', label: t('status.completed') },
           ]}
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as ReturnStatus | 'all')}
-          placeholder="All Status"
-          searchPlaceholder="Search status..."
+          placeholder={t('status.all')}
+          searchPlaceholder={t('pages.returns.searchStatus')}
           className="w-40"
         />
       </div>
@@ -196,7 +198,7 @@ export function ReturnsPage() {
         columns={columns}
         data={returns}
         isLoading={isLoading}
-        emptyMessage="No returns found."
+        emptyMessage={t('pages.returns.emptyMessage')}
       />
     </div>
   )

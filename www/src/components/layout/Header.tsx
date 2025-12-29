@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Monitor, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,12 +16,13 @@ import { useUIStore } from '@/stores/ui-store'
 import { apiClient } from '@/lib/api-client'
 
 const themeOptions = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'light', key: 'light', icon: Sun },
+  { value: 'dark', key: 'dark', icon: Moon },
+  { value: 'system', key: 'system', icon: Monitor },
 ] as const
 
 export function Header() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, logout: clearAuth } = useAuthStore()
   const { theme, setTheme } = useSettingsStore()
@@ -49,7 +51,7 @@ export function Header() {
           onClick={() => setCommandPaletteOpen(true)}
         >
           <Search className="h-4 w-4" />
-          <span>Search...</span>
+          <span>{t('header.search')}</span>
           <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
             <span className="text-xs">⌘</span>K
           </kbd>
@@ -66,7 +68,7 @@ export function Header() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Theme</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('header.theme')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {themeOptions.map((option) => (
               <DropdownMenuItem
@@ -75,7 +77,7 @@ export function Header() {
                 className="gap-2"
               >
                 <option.icon className="h-4 w-4" />
-                {option.label}
+                {t(`header.${option.key}`)}
                 {theme === option.value && <Check className="ml-auto h-4 w-4" />}
               </DropdownMenuItem>
             ))}
@@ -94,7 +96,7 @@ export function Header() {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <User className="h-4 w-4" />
               </div>
-              <span className="hidden md:inline-block">{user?.name || 'User'}</span>
+              <span className="hidden md:inline-block">{user?.name || t('header.user')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -107,12 +109,12 @@ export function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings')}>
               <Settings className="mr-2 h-4 w-4" />
-              Settings
+              {t('header.settings')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              {t('header.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

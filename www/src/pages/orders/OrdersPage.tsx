@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Eye, Truck, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,7 @@ const fulfillmentColors: Record<FulfillmentStatus, string> = {
 }
 
 export function OrdersPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
   const [shippingOrder, setShippingOrder] = useState<Order | null>(null)
@@ -47,7 +49,7 @@ export function OrdersPage() {
   const columns: ColumnDef<Order>[] = [
     {
       accessorKey: 'orderNumber',
-      header: ({ column }) => <SortableHeader column={column}>Order #</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.orders.orderNumber')}</SortableHeader>,
       cell: ({ row }) => (
         <Link
           to={`/orders/${row.original.id}`}
@@ -59,38 +61,38 @@ export function OrdersPage() {
     },
     {
       accessorKey: 'customerName',
-      header: ({ column }) => <SortableHeader column={column}>Customer</SortableHeader>,
-      cell: ({ row }) => row.getValue('customerName') || 'Walk-in',
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.orders.customer')}</SortableHeader>,
+      cell: ({ row }) => row.getValue('customerName') || t('common.walkIn'),
     },
     {
       accessorKey: 'totalAmount',
-      header: ({ column }) => <SortableHeader column={column}>Total</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('common.total')}</SortableHeader>,
       cell: ({ row }) => formatCurrency(row.getValue('totalAmount')),
     },
     {
       accessorKey: 'fulfillmentStatus',
-      header: 'Fulfillment',
+      header: t('pages.orders.fulfillment'),
       cell: ({ row }) => {
         const status = row.getValue('fulfillmentStatus') as FulfillmentStatus
         return (
           <Badge variant={fulfillmentColors[status] as 'default'}>
-            {status.replace('_', ' ')}
+            {t(`status.${status.toLowerCase()}`)}
           </Badge>
         )
       },
     },
     {
       accessorKey: 'paymentStatus',
-      header: 'Payment',
+      header: t('pages.orders.payment'),
       cell: ({ row }) => {
         const status = row.getValue('paymentStatus') as string
         const variant = status === 'PAID' ? 'success' : status === 'PARTIAL' ? 'warning' : 'secondary'
-        return <Badge variant={variant}>{status}</Badge>
+        return <Badge variant={variant}>{t(`status.${status.toLowerCase()}`)}</Badge>
       },
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => <SortableHeader column={column}>Date</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('common.date')}</SortableHeader>,
       cell: ({ row }) => formatDate(row.getValue('createdAt')),
     },
     {
@@ -111,18 +113,18 @@ export function OrdersPage() {
               <DropdownMenuItem asChild>
                 <Link to={`/orders/${order.id}`}>
                   <Eye className="mr-2 h-4 w-4" />
-                  View Details
+                  {t('common.viewDetails')}
                 </Link>
               </DropdownMenuItem>
               {order.status === 'PENDING' && (
                 <DropdownMenuItem onClick={() => confirmOrder.mutate(order.id)}>
-                  Confirm Order
+                  {t('pages.orders.confirmOrder')}
                 </DropdownMenuItem>
               )}
               {canShip && (
                 <DropdownMenuItem onClick={() => setShippingOrder(order)}>
                   <Truck className="mr-2 h-4 w-4" />
-                  Ship Order
+                  {t('pages.orders.shipOrder')}
                 </DropdownMenuItem>
               )}
               {canCancel && (
@@ -133,7 +135,7 @@ export function OrdersPage() {
                     onClick={() => setCancellingOrder(order)}
                   >
                     <XCircle className="mr-2 h-4 w-4" />
-                    Cancel Order
+                    {t('pages.orders.cancelOrder')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -149,13 +151,13 @@ export function OrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">Manage customer orders</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.orders.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.orders.description')}</p>
         </div>
         <Button asChild>
           <Link to="/orders/new">
             <Plus className="mr-2 h-4 w-4" />
-            New Order
+            {t('pages.orders.newOrder')}
           </Link>
         </Button>
       </div>
@@ -163,24 +165,24 @@ export function OrdersPage() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <Input
-          placeholder="Search orders..."
+          placeholder={t('pages.orders.searchOrders')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
         <Combobox
           options={[
-            { value: 'all', label: 'All Status' },
-            { value: 'PENDING', label: 'Pending' },
-            { value: 'CONFIRMED', label: 'Confirmed' },
-            { value: 'PROCESSING', label: 'Processing' },
-            { value: 'COMPLETED', label: 'Completed' },
-            { value: 'CANCELLED', label: 'Cancelled' },
+            { value: 'all', label: t('status.all') },
+            { value: 'PENDING', label: t('status.pending') },
+            { value: 'CONFIRMED', label: t('status.confirmed') },
+            { value: 'PROCESSING', label: t('status.processing') },
+            { value: 'COMPLETED', label: t('status.completed') },
+            { value: 'CANCELLED', label: t('status.cancelled') },
           ]}
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}
-          placeholder="All Status"
-          searchPlaceholder="Search status..."
+          placeholder={t('status.all')}
+          searchPlaceholder={t('pages.orders.searchStatus')}
           className="w-40"
         />
       </div>
@@ -191,7 +193,7 @@ export function OrdersPage() {
         data={orders}
         isLoading={isLoading}
         emptyPreset="orders"
-        emptyMessage="When customers place orders, they will appear here."
+        emptyMessage={t('pages.orders.emptyMessage')}
       />
 
       {/* Quick Ship Dialog */}
@@ -206,10 +208,10 @@ export function OrdersPage() {
         open={!!cancellingOrder}
         onOpenChange={() => setCancellingOrder(null)}
         variant="warning"
-        title="Cancel Order?"
-        description={`Are you sure you want to cancel order ${cancellingOrder?.orderNumber}? This will release any reserved inventory.`}
-        confirmText="Cancel Order"
-        cancelText="Keep Order"
+        title={t('pages.orders.cancelOrderConfirm')}
+        description={t('pages.orders.cancelOrderDescription', { orderNumber: cancellingOrder?.orderNumber })}
+        confirmText={t('pages.orders.cancelOrder')}
+        cancelText={t('pages.orders.keepOrder')}
         onConfirm={async () => {
           if (cancellingOrder) {
             await cancelOrder.mutateAsync({ id: cancellingOrder.id, data: {} })

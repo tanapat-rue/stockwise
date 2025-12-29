@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard,
   Package,
@@ -18,19 +19,20 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Products', href: '/products', icon: Package },
-  { name: 'Stock', href: '/stock', icon: Boxes },
-  { name: 'Orders', href: '/orders', icon: ShoppingCart },
-  { name: 'Purchase Orders', href: '/purchase-orders', icon: ClipboardList },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Suppliers', href: '/suppliers', icon: Truck },
-  { name: 'Returns', href: '/returns', icon: RotateCcw },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { key: 'products', href: '/products', icon: Package },
+  { key: 'stock', href: '/stock', icon: Boxes },
+  { key: 'orders', href: '/orders', icon: ShoppingCart },
+  { key: 'purchaseOrders', href: '/purchase-orders', icon: ClipboardList },
+  { key: 'customers', href: '/customers', icon: Users },
+  { key: 'suppliers', href: '/suppliers', icon: Truck },
+  { key: 'returns', href: '/returns', icon: RotateCcw },
+  { key: 'reports', href: '/reports', icon: BarChart3 },
+  { key: 'settings', href: '/settings', icon: Settings },
 ]
 
 export function Sidebar() {
+  const { t } = useTranslation()
   const location = useLocation()
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const { organization } = useAuthStore()
@@ -70,7 +72,7 @@ export function Sidebar() {
       {/* Organization */}
       {organization && !sidebarCollapsed && (
         <div className="border-b px-4 py-3">
-          <p className="text-xs text-muted-foreground">Organization</p>
+          <p className="text-xs text-muted-foreground">{t('navigation.organization')}</p>
           <p className="truncate text-sm font-medium">{organization.name}</p>
         </div>
       )}
@@ -79,9 +81,10 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 p-2">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/')
+          const name = t(`navigation.${item.key}`)
           return (
             <Link
-              key={item.name}
+              key={item.key}
               to={item.href}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
@@ -90,10 +93,10 @@ export function Sidebar() {
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 sidebarCollapsed && 'justify-center px-2'
               )}
-              title={sidebarCollapsed ? item.name : undefined}
+              title={sidebarCollapsed ? name : undefined}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {!sidebarCollapsed && <span>{item.name}</span>}
+              {!sidebarCollapsed && <span>{name}</span>}
             </Link>
           )
         })}

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   BarChart3,
   TrendingUp,
@@ -58,6 +59,7 @@ function getDateRange(range: string): { from: string; to: string } {
 }
 
 export function ReportsPage() {
+  const { t } = useTranslation()
   const [dateRange, setDateRange] = useState('month')
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
@@ -93,12 +95,12 @@ export function ReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">Analyze your business performance</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.reports.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.reports.description')}</p>
         </div>
         <Button variant="outline">
           <Download className="mr-2 h-4 w-4" />
-          Export
+          {t('common.export')}
         </Button>
       </div>
 
@@ -108,21 +110,21 @@ export function ReportsPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Label>Period:</Label>
+              <Label>{t('pages.reports.period')}</Label>
             </div>
             <Combobox
               options={[
-                { value: 'today', label: 'Today' },
-                { value: 'week', label: 'This Week' },
-                { value: 'month', label: 'This Month' },
-                { value: 'quarter', label: 'This Quarter' },
-                { value: 'year', label: 'This Year' },
-                { value: 'custom', label: 'Custom' },
+                { value: 'today', label: t('pages.reports.today') },
+                { value: 'week', label: t('pages.reports.thisWeek') },
+                { value: 'month', label: t('pages.reports.thisMonth') },
+                { value: 'quarter', label: t('pages.reports.thisQuarter') },
+                { value: 'year', label: t('pages.reports.thisYear') },
+                { value: 'custom', label: t('pages.reports.custom') },
               ]}
               value={dateRange}
               onValueChange={setDateRange}
-              placeholder="Select period"
-              searchPlaceholder="Search period..."
+              placeholder={t('pages.reports.selectPeriod')}
+              searchPlaceholder={t('pages.reports.searchPeriod')}
               className="w-40"
             />
             {dateRange === 'custom' && (
@@ -131,8 +133,8 @@ export function ReportsPage() {
                 endDate={endDate}
                 onStartChange={setStartDate}
                 onEndChange={setEndDate}
-                startPlaceholder="Start date"
-                endPlaceholder="End date"
+                startPlaceholder={t('pages.reports.startDate')}
+                endPlaceholder={t('pages.reports.endDate')}
               />
             )}
           </div>
@@ -151,28 +153,28 @@ export function ReportsPage() {
         ) : (
           <>
             <StatCard
-              title="Total Revenue"
+              title={t('pages.reports.totalRevenue')}
               value={formatCurrency(stats.totalRevenue)}
               icon={<TrendingUp className="h-4 w-4" />}
-              description="This period"
+              description={t('common.thisPeriod')}
             />
             <StatCard
-              title="Total Orders"
+              title={t('pages.reports.totalOrders')}
               value={stats.orderCount}
               icon={<ShoppingCart className="h-4 w-4" />}
-              description="This period"
+              description={t('common.thisPeriod')}
             />
             <StatCard
-              title="Products Sold"
+              title={t('pages.reports.productsSold')}
               value={stats.itemsSold}
               icon={<Package className="h-4 w-4" />}
-              description="Total items"
+              description={t('common.totalItems')}
             />
             <StatCard
-              title="Avg Order Value"
+              title={t('pages.reports.avgOrderValue')}
               value={formatCurrency(stats.avgOrderValue)}
               icon={<BarChart3 className="h-4 w-4" />}
-              description="This period"
+              description={t('common.thisPeriod')}
             />
           </>
         )}
@@ -182,8 +184,8 @@ export function ReportsPage() {
         {/* Top Products */}
         <Card>
           <CardHeader>
-            <CardTitle>Top Selling Products</CardTitle>
-            <CardDescription>Best performers this period</CardDescription>
+            <CardTitle>{t('pages.reports.topSellingProducts')}</CardTitle>
+            <CardDescription>{t('pages.reports.bestPerformers')}</CardDescription>
           </CardHeader>
           <CardContent>
             {loadingProducts ? (
@@ -195,7 +197,7 @@ export function ReportsPage() {
             ) : products.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
                 <Package className="h-8 w-8" />
-                <p>No sales data for this period</p>
+                <p>{t('pages.reports.noSalesData')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -215,7 +217,7 @@ export function ReportsPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{formatCurrency(product.revenue)}</p>
-                      <p className="text-sm text-muted-foreground">{product.quantitySold} sold</p>
+                      <p className="text-sm text-muted-foreground">{product.quantitySold} {t('pages.reports.sold')}</p>
                     </div>
                   </div>
                 ))}
@@ -227,8 +229,8 @@ export function ReportsPage() {
         {/* Sales Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Sales Trend</CardTitle>
-            <CardDescription>Revenue over time</CardDescription>
+            <CardTitle>{t('pages.reports.salesTrend')}</CardTitle>
+            <CardDescription>{t('pages.reports.revenueOverTime')}</CardDescription>
           </CardHeader>
           <CardContent>
             {loadingChart ? (
@@ -237,7 +239,7 @@ export function ReportsPage() {
               <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed">
                 <div className="text-center text-muted-foreground">
                   <BarChart3 className="mx-auto h-12 w-12 mb-2" />
-                  <p>No data for this period</p>
+                  <p>{t('pages.reports.noDataPeriod')}</p>
                 </div>
               </div>
             ) : (
@@ -279,9 +281,9 @@ export function ReportsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
-            Low Stock Alert
+            {t('pages.reports.lowStockAlert')}
           </CardTitle>
-          <CardDescription>Products that need restocking</CardDescription>
+          <CardDescription>{t('pages.reports.productsNeedRestocking')}</CardDescription>
         </CardHeader>
         <CardContent>
           {loadingLowStock ? (
@@ -293,7 +295,7 @@ export function ReportsPage() {
           ) : lowStockItems.length === 0 ? (
             <div className="flex items-center gap-2 py-4 text-muted-foreground">
               <Package className="h-5 w-5" />
-              <p>All products are well stocked</p>
+              <p>{t('pages.reports.allWellStocked')}</p>
             </div>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -307,7 +309,7 @@ export function ReportsPage() {
                     <p className="text-xs text-muted-foreground">{item.sku}</p>
                   </div>
                   <div className={`text-sm font-semibold ${item.quantity === 0 ? 'text-destructive' : 'text-yellow-600'}`}>
-                    {item.quantity === 0 ? 'Out of stock' : `${item.quantity} left`}
+                    {item.quantity === 0 ? t('common.outOfStock') : `${item.quantity} ${t('common.left')}`}
                   </div>
                 </div>
               ))}
@@ -315,7 +317,7 @@ export function ReportsPage() {
           )}
           {lowStockItems.length > 6 && (
             <p className="mt-3 text-sm text-muted-foreground">
-              And {lowStockItems.length - 6} more items with low stock...
+              {t('common.andMore', { count: lowStockItems.length - 6 })}
             </p>
           )}
         </CardContent>
@@ -324,27 +326,27 @@ export function ReportsPage() {
       {/* Report Types */}
       <Card>
         <CardHeader>
-          <CardTitle>Available Reports</CardTitle>
-          <CardDescription>Download detailed reports</CardDescription>
+          <CardTitle>{t('pages.reports.availableReports')}</CardTitle>
+          <CardDescription>{t('pages.reports.downloadReports')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { title: 'Sales Report', description: 'Order and revenue details', icon: ShoppingCart },
-              { title: 'Inventory Report', description: 'Stock levels and movements', icon: Package },
-              { title: 'Customer Report', description: 'Customer activity summary', icon: Users },
-              { title: 'Purchase Report', description: 'Supplier orders and costs', icon: TrendingUp },
+              { titleKey: 'salesReport', descKey: 'salesReportDesc', icon: ShoppingCart },
+              { titleKey: 'inventoryReport', descKey: 'inventoryReportDesc', icon: Package },
+              { titleKey: 'customerReport', descKey: 'customerReportDesc', icon: Users },
+              { titleKey: 'purchaseReport', descKey: 'purchaseReportDesc', icon: TrendingUp },
             ].map((report) => (
               <div
-                key={report.title}
+                key={report.titleKey}
                 className="rounded-lg border p-4 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 <report.icon className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="font-medium">{report.title}</p>
-                <p className="text-sm text-muted-foreground">{report.description}</p>
+                <p className="font-medium">{t(`pages.reports.${report.titleKey}`)}</p>
+                <p className="text-sm text-muted-foreground">{t(`pages.reports.${report.descKey}`)}</p>
                 <Button variant="link" className="mt-2 p-0 h-auto">
                   <Download className="mr-1 h-3 w-3" />
-                  Download
+                  {t('common.download')}
                 </Button>
               </div>
             ))}

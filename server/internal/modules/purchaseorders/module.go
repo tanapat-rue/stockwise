@@ -212,10 +212,40 @@ func (m *Module) list(c *gin.Context) {
 		branchNames[b.ID] = b.Name
 	}
 
-	// Convert to frontend format
+	// Query params for filtering
+	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
+	statusFilter := strings.ToUpper(strings.TrimSpace(c.Query("status")))
+
+	// Convert to frontend format with filtering
 	result := make([]POResponse, 0, len(pos))
 	for _, po := range pos {
-		result = append(result, m.poToResponse(po, supplierNames[po.SupplierID], branchNames[po.BranchID]))
+		supplierName := supplierNames[po.SupplierID]
+		branchName := branchNames[po.BranchID]
+
+		// Status filter - map backend status to frontend status for comparison
+		if statusFilter != "" {
+			frontendStatus := po.Status
+			switch po.Status {
+			case "OPEN":
+				frontendStatus = "DRAFT"
+			case "RECEIVING":
+				frontendStatus = "PENDING"
+			}
+			if frontendStatus != statusFilter {
+				continue
+			}
+		}
+
+		// Search filter - match against PO number, supplier name, or reference
+		if search != "" {
+			refMatch := strings.Contains(strings.ToLower(po.ReferenceNo), search)
+			supplierMatch := strings.Contains(strings.ToLower(supplierName), search)
+			if !refMatch && !supplierMatch {
+				continue
+			}
+		}
+
+		result = append(result, m.poToResponse(po, supplierName, branchName))
 	}
 
 	c.JSON(http.StatusOK, gin.H{

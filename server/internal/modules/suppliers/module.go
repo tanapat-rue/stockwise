@@ -46,6 +46,23 @@ func (m *Module) list(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list suppliers"})
 		return
 	}
+
+	// Search filter
+	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
+	if search != "" {
+		filtered := make([]models.Supplier, 0, len(suppliers))
+		for _, s := range suppliers {
+			nameMatch := strings.Contains(strings.ToLower(s.Name), search)
+			contactMatch := strings.Contains(strings.ToLower(s.ContactName), search)
+			emailMatch := strings.Contains(strings.ToLower(s.Email), search)
+			phoneMatch := strings.Contains(strings.ToLower(s.Phone), search)
+			if nameMatch || contactMatch || emailMatch || phoneMatch {
+				filtered = append(filtered, s)
+			}
+		}
+		suppliers = filtered
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"data": suppliers,
 		"meta": gin.H{

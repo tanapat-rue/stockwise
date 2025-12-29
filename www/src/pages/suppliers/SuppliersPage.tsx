@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Pencil, Trash2, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import type { Supplier, CreateSupplierRequest } from '@/features/suppliers'
 import { formatCurrency } from '@/lib/utils'
 
 export function SuppliersPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
@@ -39,14 +41,14 @@ export function SuppliersPage() {
   const columns: ColumnDef<Supplier>[] = [
     {
       accessorKey: 'code',
-      header: 'Code',
+      header: t('common.code'),
       cell: ({ row }) => (
         <span className="font-mono text-sm">{row.getValue('code') || '-'}</span>
       ),
     },
     {
       accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('common.name')}</SortableHeader>,
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -63,16 +65,16 @@ export function SuppliersPage() {
     },
     {
       accessorKey: 'phone',
-      header: 'Phone',
+      header: t('common.phone'),
       cell: ({ row }) => row.getValue('phone') || '-',
     },
     {
       accessorKey: 'totalOrders',
-      header: ({ column }) => <SortableHeader column={column}>POs</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.suppliers.pos')}</SortableHeader>,
     },
     {
       accessorKey: 'totalPurchased',
-      header: ({ column }) => <SortableHeader column={column}>Total Purchased</SortableHeader>,
+      header: ({ column }) => <SortableHeader column={column}>{t('pages.suppliers.totalPurchased')}</SortableHeader>,
       cell: ({ row }) => formatCurrency(row.getValue('totalPurchased')),
     },
     {
@@ -87,14 +89,14 @@ export function SuppliersPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setEditingSupplier(row.original)}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit
+              {t('common.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => setDeletingSupplier(row.original)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {t('common.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -128,18 +130,18 @@ export function SuppliersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
-          <p className="text-muted-foreground">Manage your supplier network</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.suppliers.title')}</h1>
+          <p className="text-muted-foreground">{t('pages.suppliers.description')}</p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Supplier
+          {t('pages.suppliers.addSupplier')}
         </Button>
       </div>
 
       {/* Search */}
       <Input
-        placeholder="Search suppliers..."
+        placeholder={t('pages.suppliers.searchSuppliers')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-sm"
@@ -151,7 +153,7 @@ export function SuppliersPage() {
         data={suppliers}
         isLoading={isLoading}
         emptyPreset="suppliers"
-        emptyMessage="Add suppliers to manage your product sourcing."
+        emptyMessage={t('pages.suppliers.emptyMessage')}
       />
 
       {/* Create/Edit Dialog */}
@@ -172,21 +174,21 @@ export function SuppliersPage() {
       <Dialog open={!!deletingSupplier} onOpenChange={() => setDeletingSupplier(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Supplier</DialogTitle>
+            <DialogTitle>{t('pages.suppliers.deleteSupplier')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deletingSupplier?.name}"?
+              {t('pages.suppliers.deleteConfirm', { name: deletingSupplier?.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeletingSupplier(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               loading={deleteSupplier.isPending}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -208,6 +210,7 @@ function SupplierFormDialog({
   onSubmit: (data: CreateSupplierRequest) => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<CreateSupplierRequest>({
     name: supplier?.name || '',
     email: supplier?.email || '',
@@ -225,11 +228,11 @@ function SupplierFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{supplier ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>
+          <DialogTitle>{supplier ? t('pages.suppliers.editSupplier') : t('pages.suppliers.addSupplier')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Company Name</Label>
+            <Label htmlFor="name">{t('pages.suppliers.companyName')}</Label>
             <Input
               id="name"
               value={formData.name}
@@ -238,7 +241,7 @@ function SupplierFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="contactPerson">Contact Person</Label>
+            <Label htmlFor="contactPerson">{t('pages.suppliers.contactPerson')}</Label>
             <Input
               id="contactPerson"
               value={formData.contactPerson}
@@ -247,7 +250,7 @@ function SupplierFormDialog({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('common.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -256,7 +259,7 @@ function SupplierFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">{t('common.phone')}</Label>
               <Input
                 id="phone"
                 value={formData.phone}
@@ -265,7 +268,7 @@ function SupplierFormDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">{t('common.address')}</Label>
             <Input
               id="address"
               value={formData.address}
@@ -274,10 +277,10 @@ function SupplierFormDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={isLoading}>
-              {supplier ? 'Update' : 'Create'}
+              {supplier ? t('common.update') : t('common.create')}
             </Button>
           </DialogFooter>
         </form>
