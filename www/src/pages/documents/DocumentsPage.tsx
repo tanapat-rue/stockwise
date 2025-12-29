@@ -1,16 +1,10 @@
 import { useState } from 'react'
-import { FileText, Download, Eye, Search, Filter } from 'lucide-react'
+import { FileText, Download, Eye, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { formatDate } from '@/lib/utils'
 
 type DocumentType = 'INVOICE' | 'RECEIPT' | 'PO' | 'DELIVERY_NOTE' | 'RETURN'
@@ -31,6 +25,15 @@ const documentTypes: Record<DocumentType, { label: string; color: string }> = {
   DELIVERY_NOTE: { label: 'Delivery Note', color: 'warning' },
   RETURN: { label: 'Return', color: 'destructive' },
 }
+
+const typeOptions = [
+  { value: 'all', label: 'All Types' },
+  { value: 'INVOICE', label: 'Invoices' },
+  { value: 'RECEIPT', label: 'Receipts' },
+  { value: 'PO', label: 'Purchase Orders' },
+  { value: 'DELIVERY_NOTE', label: 'Delivery Notes' },
+  { value: 'RETURN', label: 'Returns' },
+]
 
 export function DocumentsPage() {
   const [search, setSearch] = useState('')
@@ -72,23 +75,14 @@ export function DocumentsPage() {
             className="pl-9"
           />
         </div>
-        <Select
+        <Combobox
+          options={typeOptions}
           value={typeFilter}
           onValueChange={(v) => setTypeFilter(v as DocumentType | 'all')}
-        >
-          <SelectTrigger className="w-44">
-            <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="INVOICE">Invoices</SelectItem>
-            <SelectItem value="RECEIPT">Receipts</SelectItem>
-            <SelectItem value="PO">Purchase Orders</SelectItem>
-            <SelectItem value="DELIVERY_NOTE">Delivery Notes</SelectItem>
-            <SelectItem value="RETURN">Returns</SelectItem>
-          </SelectContent>
-        </Select>
+          placeholder="All Types"
+          searchPlaceholder="Search type..."
+          className="w-44"
+        />
       </div>
 
       {/* Documents Grid */}

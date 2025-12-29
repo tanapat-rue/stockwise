@@ -7,13 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { DatePicker } from '@/components/ui/date-picker'
 import { usePurchaseOrder, useCreatePurchaseOrder, useUpdatePurchaseOrder } from '@/features/purchase-orders'
@@ -202,18 +195,13 @@ export function PurchaseOrderFormPage() {
                 {branches.length > 1 && (
                   <div className="space-y-2">
                     <Label>Branch</Label>
-                    <Select value={effectiveBranchId} onValueChange={setBranchId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branches.map((b) => (
-                          <SelectItem key={b.id} value={b.id}>
-                            {b.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={branches.map((b) => ({ value: b.id, label: b.name }))}
+                      value={effectiveBranchId}
+                      onValueChange={setBranchId}
+                      placeholder="Select branch"
+                      searchPlaceholder="Search branches..."
+                    />
                   </div>
                 )}
                 <div className="space-y-2">

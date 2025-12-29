@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui-store'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
+import { CommandPalette } from './CommandPalette'
 
 export function Layout() {
   const { sidebarCollapsed } = useUIStore()
@@ -21,6 +22,7 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
     </div>
   )
 }

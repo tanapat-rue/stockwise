@@ -11,13 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { useShipOrder } from '@/features/orders'
 import type { Order } from '@/features/orders'
 import { formatCurrency } from '@/lib/utils'
@@ -108,18 +102,13 @@ export function QuickShipDialog({ order, open, onOpenChange }: QuickShipDialogPr
           {/* Carrier Selection */}
           <div className="space-y-2">
             <Label htmlFor="carrier">Carrier</Label>
-            <Select value={carrier} onValueChange={setCarrier}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select carrier" />
-              </SelectTrigger>
-              <SelectContent>
-                {CARRIERS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={CARRIERS}
+              value={carrier}
+              onValueChange={setCarrier}
+              placeholder="Select carrier"
+              searchPlaceholder="Search carriers..."
+            />
           </div>
 
           {/* Tracking Number */}

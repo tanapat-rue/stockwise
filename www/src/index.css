@@ -78,6 +78,374 @@
   --color-ring: hsl(199 89% 48%);
 }
 
+/* ========================================
+   COLOR THEMES - 10 Beautiful Full Palettes
+   Each theme transforms the entire app look
+   ======================================== */
+
+/* 1. Ocean (Default) - Already defined above */
+
+/* 2. Emerald - Fresh forest green theme */
+.theme-emerald {
+  --color-background: hsl(150 30% 98%);
+  --color-foreground: hsl(150 50% 10%);
+  --color-card: hsl(150 30% 99%);
+  --color-card-foreground: hsl(150 50% 10%);
+  --color-popover: hsl(150 30% 99%);
+  --color-popover-foreground: hsl(150 50% 10%);
+  --color-primary: hsl(152 69% 31%);
+  --color-primary-foreground: hsl(150 30% 98%);
+  --color-secondary: hsl(150 30% 94%);
+  --color-secondary-foreground: hsl(150 50% 15%);
+  --color-muted: hsl(150 20% 94%);
+  --color-muted-foreground: hsl(150 15% 45%);
+  --color-accent: hsl(150 30% 92%);
+  --color-accent-foreground: hsl(150 50% 15%);
+  --color-border: hsl(150 20% 88%);
+  --color-input: hsl(150 20% 88%);
+  --color-ring: hsl(152 69% 31%);
+}
+.theme-emerald.dark, .dark.theme-emerald {
+  --color-background: hsl(150 30% 6%);
+  --color-foreground: hsl(150 20% 95%);
+  --color-card: hsl(150 25% 8%);
+  --color-card-foreground: hsl(150 20% 95%);
+  --color-popover: hsl(150 25% 8%);
+  --color-popover-foreground: hsl(150 20% 95%);
+  --color-primary: hsl(152 60% 45%);
+  --color-primary-foreground: hsl(150 30% 6%);
+  --color-secondary: hsl(150 20% 15%);
+  --color-secondary-foreground: hsl(150 20% 95%);
+  --color-muted: hsl(150 15% 15%);
+  --color-muted-foreground: hsl(150 15% 60%);
+  --color-accent: hsl(150 20% 18%);
+  --color-accent-foreground: hsl(150 20% 95%);
+  --color-border: hsl(150 15% 18%);
+  --color-input: hsl(150 15% 18%);
+  --color-ring: hsl(152 60% 45%);
+}
+
+/* 3. Sunset - Warm coral and orange theme */
+.theme-sunset {
+  --color-background: hsl(30 50% 98%);
+  --color-foreground: hsl(20 60% 12%);
+  --color-card: hsl(30 40% 99%);
+  --color-card-foreground: hsl(20 60% 12%);
+  --color-popover: hsl(30 40% 99%);
+  --color-popover-foreground: hsl(20 60% 12%);
+  --color-primary: hsl(24 95% 53%);
+  --color-primary-foreground: hsl(30 50% 98%);
+  --color-secondary: hsl(30 40% 93%);
+  --color-secondary-foreground: hsl(20 60% 15%);
+  --color-muted: hsl(30 30% 93%);
+  --color-muted-foreground: hsl(20 20% 45%);
+  --color-accent: hsl(30 40% 91%);
+  --color-accent-foreground: hsl(20 60% 15%);
+  --color-border: hsl(30 25% 87%);
+  --color-input: hsl(30 25% 87%);
+  --color-ring: hsl(24 95% 53%);
+}
+.theme-sunset.dark, .dark.theme-sunset {
+  --color-background: hsl(20 40% 6%);
+  --color-foreground: hsl(30 30% 95%);
+  --color-card: hsl(20 35% 9%);
+  --color-card-foreground: hsl(30 30% 95%);
+  --color-popover: hsl(20 35% 9%);
+  --color-popover-foreground: hsl(30 30% 95%);
+  --color-primary: hsl(24 90% 58%);
+  --color-primary-foreground: hsl(20 40% 6%);
+  --color-secondary: hsl(20 25% 16%);
+  --color-secondary-foreground: hsl(30 30% 95%);
+  --color-muted: hsl(20 20% 15%);
+  --color-muted-foreground: hsl(20 15% 60%);
+  --color-accent: hsl(20 25% 18%);
+  --color-accent-foreground: hsl(30 30% 95%);
+  --color-border: hsl(20 20% 18%);
+  --color-input: hsl(20 20% 18%);
+  --color-ring: hsl(24 90% 58%);
+}
+
+/* 4. Violet - Royal purple elegant theme */
+.theme-violet {
+  --color-background: hsl(270 30% 98%);
+  --color-foreground: hsl(270 50% 12%);
+  --color-card: hsl(270 25% 99%);
+  --color-card-foreground: hsl(270 50% 12%);
+  --color-popover: hsl(270 25% 99%);
+  --color-popover-foreground: hsl(270 50% 12%);
+  --color-primary: hsl(263 70% 50%);
+  --color-primary-foreground: hsl(270 30% 98%);
+  --color-secondary: hsl(270 30% 94%);
+  --color-secondary-foreground: hsl(270 50% 15%);
+  --color-muted: hsl(270 20% 94%);
+  --color-muted-foreground: hsl(270 15% 45%);
+  --color-accent: hsl(270 30% 92%);
+  --color-accent-foreground: hsl(270 50% 15%);
+  --color-border: hsl(270 20% 88%);
+  --color-input: hsl(270 20% 88%);
+  --color-ring: hsl(263 70% 50%);
+}
+.theme-violet.dark, .dark.theme-violet {
+  --color-background: hsl(270 40% 6%);
+  --color-foreground: hsl(270 20% 95%);
+  --color-card: hsl(270 35% 9%);
+  --color-card-foreground: hsl(270 20% 95%);
+  --color-popover: hsl(270 35% 9%);
+  --color-popover-foreground: hsl(270 20% 95%);
+  --color-primary: hsl(263 65% 60%);
+  --color-primary-foreground: hsl(270 40% 6%);
+  --color-secondary: hsl(270 25% 16%);
+  --color-secondary-foreground: hsl(270 20% 95%);
+  --color-muted: hsl(270 20% 15%);
+  --color-muted-foreground: hsl(270 15% 60%);
+  --color-accent: hsl(270 25% 18%);
+  --color-accent-foreground: hsl(270 20% 95%);
+  --color-border: hsl(270 20% 18%);
+  --color-input: hsl(270 20% 18%);
+  --color-ring: hsl(263 65% 60%);
+}
+
+/* 5. Rose - Soft romantic pink theme */
+.theme-rose {
+  --color-background: hsl(350 40% 98%);
+  --color-foreground: hsl(350 50% 12%);
+  --color-card: hsl(350 35% 99%);
+  --color-card-foreground: hsl(350 50% 12%);
+  --color-popover: hsl(350 35% 99%);
+  --color-popover-foreground: hsl(350 50% 12%);
+  --color-primary: hsl(346 77% 50%);
+  --color-primary-foreground: hsl(350 40% 98%);
+  --color-secondary: hsl(350 35% 94%);
+  --color-secondary-foreground: hsl(350 50% 15%);
+  --color-muted: hsl(350 25% 94%);
+  --color-muted-foreground: hsl(350 15% 45%);
+  --color-accent: hsl(350 35% 92%);
+  --color-accent-foreground: hsl(350 50% 15%);
+  --color-border: hsl(350 25% 88%);
+  --color-input: hsl(350 25% 88%);
+  --color-ring: hsl(346 77% 50%);
+}
+.theme-rose.dark, .dark.theme-rose {
+  --color-background: hsl(350 35% 6%);
+  --color-foreground: hsl(350 25% 95%);
+  --color-card: hsl(350 30% 9%);
+  --color-card-foreground: hsl(350 25% 95%);
+  --color-popover: hsl(350 30% 9%);
+  --color-popover-foreground: hsl(350 25% 95%);
+  --color-primary: hsl(346 70% 58%);
+  --color-primary-foreground: hsl(350 35% 6%);
+  --color-secondary: hsl(350 25% 16%);
+  --color-secondary-foreground: hsl(350 25% 95%);
+  --color-muted: hsl(350 20% 15%);
+  --color-muted-foreground: hsl(350 15% 60%);
+  --color-accent: hsl(350 25% 18%);
+  --color-accent-foreground: hsl(350 25% 95%);
+  --color-border: hsl(350 20% 18%);
+  --color-input: hsl(350 20% 18%);
+  --color-ring: hsl(346 70% 58%);
+}
+
+/* 6. Ruby - Bold crimson red theme */
+.theme-ruby {
+  --color-background: hsl(0 30% 98%);
+  --color-foreground: hsl(0 50% 12%);
+  --color-card: hsl(0 25% 99%);
+  --color-card-foreground: hsl(0 50% 12%);
+  --color-popover: hsl(0 25% 99%);
+  --color-popover-foreground: hsl(0 50% 12%);
+  --color-primary: hsl(0 72% 51%);
+  --color-primary-foreground: hsl(0 30% 98%);
+  --color-secondary: hsl(0 30% 94%);
+  --color-secondary-foreground: hsl(0 50% 15%);
+  --color-muted: hsl(0 20% 94%);
+  --color-muted-foreground: hsl(0 15% 45%);
+  --color-accent: hsl(0 30% 92%);
+  --color-accent-foreground: hsl(0 50% 15%);
+  --color-border: hsl(0 20% 88%);
+  --color-input: hsl(0 20% 88%);
+  --color-ring: hsl(0 72% 51%);
+  --color-destructive: hsl(0 72% 51%);
+}
+.theme-ruby.dark, .dark.theme-ruby {
+  --color-background: hsl(0 35% 6%);
+  --color-foreground: hsl(0 20% 95%);
+  --color-card: hsl(0 30% 9%);
+  --color-card-foreground: hsl(0 20% 95%);
+  --color-popover: hsl(0 30% 9%);
+  --color-popover-foreground: hsl(0 20% 95%);
+  --color-primary: hsl(0 65% 55%);
+  --color-primary-foreground: hsl(0 35% 6%);
+  --color-secondary: hsl(0 25% 16%);
+  --color-secondary-foreground: hsl(0 20% 95%);
+  --color-muted: hsl(0 20% 15%);
+  --color-muted-foreground: hsl(0 15% 60%);
+  --color-accent: hsl(0 25% 18%);
+  --color-accent-foreground: hsl(0 20% 95%);
+  --color-border: hsl(0 20% 18%);
+  --color-input: hsl(0 20% 18%);
+  --color-ring: hsl(0 65% 55%);
+}
+
+/* 7. Amber - Warm golden honey theme */
+.theme-amber {
+  --color-background: hsl(45 50% 97%);
+  --color-foreground: hsl(40 60% 10%);
+  --color-card: hsl(45 45% 98%);
+  --color-card-foreground: hsl(40 60% 10%);
+  --color-popover: hsl(45 45% 98%);
+  --color-popover-foreground: hsl(40 60% 10%);
+  --color-primary: hsl(38 92% 50%);
+  --color-primary-foreground: hsl(40 60% 10%);
+  --color-secondary: hsl(45 40% 92%);
+  --color-secondary-foreground: hsl(40 60% 15%);
+  --color-muted: hsl(45 30% 92%);
+  --color-muted-foreground: hsl(40 20% 40%);
+  --color-accent: hsl(45 40% 90%);
+  --color-accent-foreground: hsl(40 60% 15%);
+  --color-border: hsl(45 30% 85%);
+  --color-input: hsl(45 30% 85%);
+  --color-ring: hsl(38 92% 50%);
+}
+.theme-amber.dark, .dark.theme-amber {
+  --color-background: hsl(40 35% 6%);
+  --color-foreground: hsl(45 30% 93%);
+  --color-card: hsl(40 30% 9%);
+  --color-card-foreground: hsl(45 30% 93%);
+  --color-popover: hsl(40 30% 9%);
+  --color-popover-foreground: hsl(45 30% 93%);
+  --color-primary: hsl(38 85% 55%);
+  --color-primary-foreground: hsl(40 35% 6%);
+  --color-secondary: hsl(40 25% 16%);
+  --color-secondary-foreground: hsl(45 30% 93%);
+  --color-muted: hsl(40 20% 14%);
+  --color-muted-foreground: hsl(40 15% 55%);
+  --color-accent: hsl(40 25% 18%);
+  --color-accent-foreground: hsl(45 30% 93%);
+  --color-border: hsl(40 20% 18%);
+  --color-input: hsl(40 20% 18%);
+  --color-ring: hsl(38 85% 55%);
+}
+
+/* 8. Teal - Fresh aqua cyan theme */
+.theme-teal {
+  --color-background: hsl(175 35% 98%);
+  --color-foreground: hsl(175 50% 10%);
+  --color-card: hsl(175 30% 99%);
+  --color-card-foreground: hsl(175 50% 10%);
+  --color-popover: hsl(175 30% 99%);
+  --color-popover-foreground: hsl(175 50% 10%);
+  --color-primary: hsl(173 80% 36%);
+  --color-primary-foreground: hsl(175 35% 98%);
+  --color-secondary: hsl(175 35% 93%);
+  --color-secondary-foreground: hsl(175 50% 15%);
+  --color-muted: hsl(175 25% 93%);
+  --color-muted-foreground: hsl(175 15% 45%);
+  --color-accent: hsl(175 35% 91%);
+  --color-accent-foreground: hsl(175 50% 15%);
+  --color-border: hsl(175 25% 87%);
+  --color-input: hsl(175 25% 87%);
+  --color-ring: hsl(173 80% 36%);
+}
+.theme-teal.dark, .dark.theme-teal {
+  --color-background: hsl(175 35% 5%);
+  --color-foreground: hsl(175 25% 95%);
+  --color-card: hsl(175 30% 8%);
+  --color-card-foreground: hsl(175 25% 95%);
+  --color-popover: hsl(175 30% 8%);
+  --color-popover-foreground: hsl(175 25% 95%);
+  --color-primary: hsl(173 70% 45%);
+  --color-primary-foreground: hsl(175 35% 5%);
+  --color-secondary: hsl(175 25% 15%);
+  --color-secondary-foreground: hsl(175 25% 95%);
+  --color-muted: hsl(175 20% 14%);
+  --color-muted-foreground: hsl(175 15% 58%);
+  --color-accent: hsl(175 25% 17%);
+  --color-accent-foreground: hsl(175 25% 95%);
+  --color-border: hsl(175 20% 17%);
+  --color-input: hsl(175 20% 17%);
+  --color-ring: hsl(173 70% 45%);
+}
+
+/* 9. Indigo - Deep midnight blue theme */
+.theme-indigo {
+  --color-background: hsl(235 35% 98%);
+  --color-foreground: hsl(235 50% 12%);
+  --color-card: hsl(235 30% 99%);
+  --color-card-foreground: hsl(235 50% 12%);
+  --color-popover: hsl(235 30% 99%);
+  --color-popover-foreground: hsl(235 50% 12%);
+  --color-primary: hsl(239 84% 67%);
+  --color-primary-foreground: hsl(235 35% 98%);
+  --color-secondary: hsl(235 35% 94%);
+  --color-secondary-foreground: hsl(235 50% 15%);
+  --color-muted: hsl(235 25% 94%);
+  --color-muted-foreground: hsl(235 15% 45%);
+  --color-accent: hsl(235 35% 92%);
+  --color-accent-foreground: hsl(235 50% 15%);
+  --color-border: hsl(235 25% 88%);
+  --color-input: hsl(235 25% 88%);
+  --color-ring: hsl(239 84% 67%);
+}
+.theme-indigo.dark, .dark.theme-indigo {
+  --color-background: hsl(235 45% 5%);
+  --color-foreground: hsl(235 25% 95%);
+  --color-card: hsl(235 40% 8%);
+  --color-card-foreground: hsl(235 25% 95%);
+  --color-popover: hsl(235 40% 8%);
+  --color-popover-foreground: hsl(235 25% 95%);
+  --color-primary: hsl(239 75% 72%);
+  --color-primary-foreground: hsl(235 45% 5%);
+  --color-secondary: hsl(235 30% 16%);
+  --color-secondary-foreground: hsl(235 25% 95%);
+  --color-muted: hsl(235 25% 14%);
+  --color-muted-foreground: hsl(235 15% 58%);
+  --color-accent: hsl(235 30% 18%);
+  --color-accent-foreground: hsl(235 25% 95%);
+  --color-border: hsl(235 25% 18%);
+  --color-input: hsl(235 25% 18%);
+  --color-ring: hsl(239 75% 72%);
+}
+
+/* 10. Slate - Sophisticated neutral gray theme */
+.theme-slate {
+  --color-background: hsl(210 15% 97%);
+  --color-foreground: hsl(210 20% 15%);
+  --color-card: hsl(210 12% 98%);
+  --color-card-foreground: hsl(210 20% 15%);
+  --color-popover: hsl(210 12% 98%);
+  --color-popover-foreground: hsl(210 20% 15%);
+  --color-primary: hsl(215 25% 40%);
+  --color-primary-foreground: hsl(210 15% 97%);
+  --color-secondary: hsl(210 15% 93%);
+  --color-secondary-foreground: hsl(210 20% 18%);
+  --color-muted: hsl(210 12% 93%);
+  --color-muted-foreground: hsl(210 10% 45%);
+  --color-accent: hsl(210 15% 91%);
+  --color-accent-foreground: hsl(210 20% 18%);
+  --color-border: hsl(210 12% 87%);
+  --color-input: hsl(210 12% 87%);
+  --color-ring: hsl(215 25% 40%);
+}
+.theme-slate.dark, .dark.theme-slate {
+  --color-background: hsl(210 20% 7%);
+  --color-foreground: hsl(210 15% 93%);
+  --color-card: hsl(210 18% 10%);
+  --color-card-foreground: hsl(210 15% 93%);
+  --color-popover: hsl(210 18% 10%);
+  --color-popover-foreground: hsl(210 15% 93%);
+  --color-primary: hsl(215 20% 55%);
+  --color-primary-foreground: hsl(210 20% 7%);
+  --color-secondary: hsl(210 15% 17%);
+  --color-secondary-foreground: hsl(210 15% 93%);
+  --color-muted: hsl(210 12% 16%);
+  --color-muted-foreground: hsl(210 10% 55%);
+  --color-accent: hsl(210 15% 19%);
+  --color-accent-foreground: hsl(210 15% 93%);
+  --color-border: hsl(210 12% 19%);
+  --color-input: hsl(210 12% 19%);
+  --color-ring: hsl(215 20% 55%);
+}
+
 /* Base styles */
 * {
   border-color: var(--color-border);

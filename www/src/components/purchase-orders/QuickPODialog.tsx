@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Truck, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,13 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { useCreatePurchaseOrder } from '@/features/purchase-orders'
 import { useSuppliers } from '@/features/suppliers'
 import { useProducts } from '@/features/products'
@@ -59,6 +53,27 @@ export function QuickPODialog({ open, onOpenChange, preselectedProducts }: Quick
 
   const suppliers = suppliersData?.data || []
   const products = productsData?.data || []
+
+  // Convert to Combobox options
+  const supplierOptions = useMemo(
+    () => suppliers.map((s) => ({ value: s.id, label: s.name })),
+    [suppliers]
+  )
+
+  const productOptions = useMemo(
+    () =>
+      products.map((p) => ({
+        value: p.id,
+        label: p.name,
+        description: `SKU: ${p.sku} | ${formatCurrency(p.cost)}`,
+      })),
+    [products]
+  )
+
+  const branchOptions = useMemo(
+    () => branches.map((b) => ({ value: b.id, label: b.name })),
+    [branches]
+  )
 
   const handleAddItem = () => {
     setItems([...items, { productId: '', productName: '', quantity: 1, unitCost: 0 }])
@@ -130,36 +145,27 @@ export function QuickPODialog({ open, onOpenChange, preselectedProducts }: Quick
           {branches.length > 1 && (
             <div className="space-y-2">
               <Label>Branch</Label>
-              <Select value={effectiveBranchId} onValueChange={setBranchId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select branch" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                options={branchOptions}
+                value={effectiveBranchId}
+                onValueChange={setBranchId}
+                placeholder="Select branch"
+                searchPlaceholder="Search branches..."
+              />
             </div>
           )}
 
           {/* Supplier Selection */}
           <div className="space-y-2">
             <Label>Supplier</Label>
-            <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select supplier" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={supplierOptions}
+              value={supplierId}
+              onValueChange={setSupplierId}
+              placeholder="Select supplier"
+              searchPlaceholder="Search suppliers..."
+              emptyText="No suppliers found"
+            />
           </div>
 
           {/* Items */}
@@ -180,21 +186,16 @@ export function QuickPODialog({ open, onOpenChange, preselectedProducts }: Quick
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {items.map((item, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <Select
-                      value={item.productId}
-                      onValueChange={(v) => handleProductSelect(index, v)}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex-1">
+                      <Combobox
+                        options={productOptions}
+                        value={item.productId}
+                        onValueChange={(v) => handleProductSelect(index, v)}
+                        placeholder="Select product"
+                        searchPlaceholder="Search products..."
+                        emptyText="No products found"
+                      />
+                    </div>
                     <Input
                       type="number"
                       min="1"

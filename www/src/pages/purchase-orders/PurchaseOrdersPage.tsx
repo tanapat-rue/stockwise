@@ -13,13 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   usePurchaseOrders,
@@ -193,21 +187,20 @@ export function PurchaseOrdersPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Select
+        <Combobox
+          options={[
+            { value: 'all', label: 'All Status' },
+            { value: 'DRAFT', label: 'Draft' },
+            { value: 'PENDING', label: 'Pending' },
+            { value: 'RECEIVED', label: 'Received' },
+            { value: 'CANCELLED', label: 'Cancelled' },
+          ]}
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as POStatus | 'all')}
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="DRAFT">Draft</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="RECEIVED">Received</SelectItem>
-            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+          placeholder="All Status"
+          searchPlaceholder="Search status..."
+          className="w-44"
+        />
       </div>
 
       {/* Table */}

@@ -13,13 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useOrders, useConfirmOrder, useCancelOrder } from '@/features/orders'
 import type { Order, OrderStatus, FulfillmentStatus } from '@/features/orders'
@@ -174,22 +168,21 @@ export function OrdersPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Select
+        <Combobox
+          options={[
+            { value: 'all', label: 'All Status' },
+            { value: 'PENDING', label: 'Pending' },
+            { value: 'CONFIRMED', label: 'Confirmed' },
+            { value: 'PROCESSING', label: 'Processing' },
+            { value: 'COMPLETED', label: 'Completed' },
+            { value: 'CANCELLED', label: 'Cancelled' },
+          ]}
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-            <SelectItem value="PROCESSING">Processing</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+          placeholder="All Status"
+          searchPlaceholder="Search status..."
+          className="w-40"
+        />
       </div>
 
       {/* Table */}

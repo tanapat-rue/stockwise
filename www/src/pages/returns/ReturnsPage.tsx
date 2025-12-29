@@ -11,13 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
+import { ReturnFormDialog } from '@/components/returns'
 import { useReturns, useApproveReturn, useRejectReturn, useReceiveReturn } from '@/features/returns'
 import type { Return, ReturnStatus, ReturnType } from '@/features/returns'
 import { formatDate } from '@/lib/utils'
@@ -36,6 +31,7 @@ export function ReturnsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReturnStatus | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<ReturnType | 'all'>('all')
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   const { data: returnsData, isLoading } = useReturns({
     search,
@@ -150,11 +146,13 @@ export function ReturnsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Returns</h1>
           <p className="text-muted-foreground">Manage customer and supplier returns</p>
         </div>
-        <Button>
+        <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Return
         </Button>
       </div>
+
+      <ReturnFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
 
       {/* Filters */}
       <div className="flex items-center gap-4">
@@ -164,35 +162,33 @@ export function ReturnsPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Select
+        <Combobox
+          options={[
+            { value: 'all', label: 'All Types' },
+            { value: 'CUSTOMER', label: 'Customer' },
+            { value: 'SUPPLIER', label: 'Supplier' },
+          ]}
           value={typeFilter}
           onValueChange={(value) => setTypeFilter(value as ReturnType | 'all')}
-        >
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="CUSTOMER">Customer</SelectItem>
-            <SelectItem value="SUPPLIER">Supplier</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
+          placeholder="All Types"
+          searchPlaceholder="Search type..."
+          className="w-36"
+        />
+        <Combobox
+          options={[
+            { value: 'all', label: 'All Status' },
+            { value: 'REQUESTED', label: 'Requested' },
+            { value: 'APPROVED', label: 'Approved' },
+            { value: 'REJECTED', label: 'Rejected' },
+            { value: 'RECEIVED', label: 'Received' },
+            { value: 'COMPLETED', label: 'Completed' },
+          ]}
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as ReturnStatus | 'all')}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="REQUESTED">Requested</SelectItem>
-            <SelectItem value="APPROVED">Approved</SelectItem>
-            <SelectItem value="REJECTED">Rejected</SelectItem>
-            <SelectItem value="RECEIVED">Received</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+          placeholder="All Status"
+          searchPlaceholder="Search status..."
+          className="w-40"
+        />
       </div>
 
       {/* Table */}
