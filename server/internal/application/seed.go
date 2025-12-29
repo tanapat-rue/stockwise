@@ -42,7 +42,7 @@ func ensureSeedAdmin(ctx context.Context, cfg appconfig.Config, r *repo.Repo) er
 	orgID := primitive.NewObjectID().Hex()
 	org := models.Organization{
 		ID:   orgID,
-		Name: "StockFlows Demo",
+		Name: "StockWise Demo",
 	}
 	if _, err := r.CreateOrg(ctx, org); err != nil {
 		return fmt.Errorf("seed: create org: %w", err)

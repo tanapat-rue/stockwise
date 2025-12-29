@@ -85,7 +85,7 @@ func (m *Module) createOmiseCustomer(c *gin.Context) {
 	customer, err := client.CreateCustomer(
 		c.Request.Context(),
 		req.Email,
-		"StockFlows org "+orgID+" ("+req.Name+")",
+		"StockWise org "+orgID+" ("+req.Name+")",
 		req.CardToken,
 	)
 	if err != nil {

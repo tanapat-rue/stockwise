@@ -61,7 +61,7 @@ export const useSettingsStore = create<SettingsState>()(
       setDateFormat: (dateFormat) => set({ dateFormat }),
     }),
     {
-      name: 'stockflows-settings',
+      name: 'stockwise-settings',
       onRehydrateStorage: () => (state) => {
         if (state) {
           applyTheme(state.theme)

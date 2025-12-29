@@ -51,7 +51,7 @@ export function Sidebar() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Package className="h-5 w-5" />
             </div>
-            <span className="font-semibold">StockFlows</span>
+            <span className="font-semibold">StockWise</span>
           </Link>
         )}
         {sidebarCollapsed && (

@@ -63,7 +63,7 @@ export function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('pages.dashboard.title')}</h1>
         <p className="text-muted-foreground">
-          {t('pages.dashboard.welcome', { name: organization?.name || 'StockFlows' })}
+          {t('pages.dashboard.welcome', { name: organization?.name || 'StockWise' })}
         </p>
       </div>
 

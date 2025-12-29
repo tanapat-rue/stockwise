@@ -6,7 +6,7 @@ import th from '@/locales/th.json'
 // Get initial language from localStorage
 function getInitialLanguage(): 'en' | 'th' {
   try {
-    const stored = localStorage.getItem('stockflows-settings')
+    const stored = localStorage.getItem('stockwise-settings')
     if (stored) {
       const parsed = JSON.parse(stored)
       if (parsed.state?.language === 'en' || parsed.state?.language === 'th') {
