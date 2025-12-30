@@ -288,7 +288,11 @@
       "customerReport": "Customer Report",
       "customerReportDesc": "Customer activity summary",
       "purchaseReport": "Purchase Report",
-      "purchaseReportDesc": "Supplier orders and costs"
+      "purchaseReportDesc": "Supplier orders and costs",
+      "topCustomers": "Top Customers",
+      "bestCustomers": "Best customers this period",
+      "noCustomerData": "No customer data for this period",
+      "orders": "orders"
     },
     "settings": {
       "title": "Settings",

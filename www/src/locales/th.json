@@ -288,7 +288,11 @@
       "customerReport": "รายงานลูกค้า",
       "customerReportDesc": "สรุปกิจกรรมของลูกค้า",
       "purchaseReport": "รายงานการซื้อ",
-      "purchaseReportDesc": "คำสั่งซื้อและต้นทุนจากผู้จำหน่าย"
+      "purchaseReportDesc": "คำสั่งซื้อและต้นทุนจากผู้จำหน่าย",
+      "topCustomers": "ลูกค้าอันดับต้น",
+      "bestCustomers": "ลูกค้าที่ดีที่สุดในช่วงเวลานี้",
+      "noCustomerData": "ไม่มีข้อมูลลูกค้าในช่วงเวลานี้",
+      "orders": "คำสั่งซื้อ"
     },
     "settings": {
       "title": "การตั้งค่า",
