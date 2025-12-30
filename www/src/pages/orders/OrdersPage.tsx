@@ -6,7 +6,7 @@ import { Plus, MoreHorizontal, Eye, Truck, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { ServerDataTable, ServerSortableHeader, type PaginationState, type SortingParams } from '@/components/ui/server-data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,20 +36,31 @@ export function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
   const [shippingOrder, setShippingOrder] = useState<Order | null>(null)
   const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null)
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingParams>({})
 
   const { data: ordersData, isLoading } = useOrders({
     search,
     status: statusFilter === 'all' ? undefined : statusFilter,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
   })
   const confirmOrder = useConfirmOrder()
   const cancelOrder = useCancelOrder()
 
   const orders = ordersData?.data || []
+  const meta = ordersData?.meta || { page: 1, limit: 10, total: 0, totalPages: 0 }
 
   const columns: ColumnDef<Order>[] = [
     {
       accessorKey: 'orderNumber',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.orders.orderNumber')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.orders.orderNumber')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <Link
           to={`/orders/${row.original.id}`}
@@ -61,12 +72,20 @@ export function OrdersPage() {
     },
     {
       accessorKey: 'customerName',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.orders.customer')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.orders.customer')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => row.getValue('customerName') || t('common.walkIn'),
     },
     {
       accessorKey: 'totalAmount',
-      header: ({ column }) => <SortableHeader column={column}>{t('common.total')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('common.total')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatCurrency(row.getValue('totalAmount')),
     },
     {
@@ -92,7 +111,11 @@ export function OrdersPage() {
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => <SortableHeader column={column}>{t('common.date')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('common.date')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatDate(row.getValue('createdAt')),
     },
     {
@@ -167,7 +190,10 @@ export function OrdersPage() {
         <Input
           placeholder={t('pages.orders.searchOrders')}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           className="max-w-sm"
         />
         <Combobox
@@ -180,7 +206,10 @@ export function OrdersPage() {
             { value: 'CANCELLED', label: t('status.cancelled') },
           ]}
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}
+          onValueChange={(value) => {
+            setStatusFilter(value as OrderStatus | 'all')
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           placeholder={t('status.all')}
           searchPlaceholder={t('pages.orders.searchStatus')}
           className="w-40"
@@ -188,10 +217,16 @@ export function OrdersPage() {
       </div>
 
       {/* Table */}
-      <DataTable
+      <ServerDataTable
         columns={columns}
         data={orders}
         isLoading={isLoading}
+        pageCount={meta.totalPages}
+        totalItems={meta.total}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
         emptyPreset="orders"
         emptyMessage={t('pages.orders.emptyMessage')}
       />

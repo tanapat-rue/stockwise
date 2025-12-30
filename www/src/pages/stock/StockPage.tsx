@@ -5,7 +5,7 @@ import { AlertTriangle, Package, Plus, Minus, MoreHorizontal } from 'lucide-reac
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { ServerDataTable, ServerSortableHeader, type PaginationState, type SortingParams } from '@/components/ui/server-data-table'
 import {
   Dialog,
   DialogContent,
@@ -32,23 +32,42 @@ export function StockPage() {
   const [adjustmentType, setAdjustmentType] = useState<'add' | 'subtract'>('add')
   const [adjustmentQty, setAdjustmentQty] = useState('')
   const [adjustmentReason, setAdjustmentReason] = useState('')
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingParams>({})
 
-  const { data: stockData, isLoading } = useStock({ search, lowStock: showLowStock })
+  const { data: stockData, isLoading } = useStock({
+    search,
+    lowStock: showLowStock,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
+  })
   const adjustStock = useAdjustStock()
 
   const stockLevels = stockData?.data || []
+  const total = stockData?.total || 0
+  const pageCount = Math.ceil(total / pagination.pageSize)
 
   const columns: ColumnDef<StockLevel>[] = [
     {
       accessorKey: 'productSku',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.products.sku')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.products.sku')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <span className="font-mono text-sm">{row.getValue('productSku')}</span>
       ),
     },
     {
       accessorKey: 'productName',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.stock.product')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.stock.product')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -60,7 +79,11 @@ export function StockPage() {
     },
     {
       accessorKey: 'quantity',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.stock.onHand')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.stock.onHand')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => {
         const qty = row.getValue('quantity') as number
         const isLow = row.original.isLowStock
@@ -81,7 +104,11 @@ export function StockPage() {
     },
     {
       accessorKey: 'availableQuantity',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.stock.available')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.stock.available')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => {
         const available = row.getValue('availableQuantity') as number
         return (
@@ -176,12 +203,18 @@ export function StockPage() {
         <Input
           placeholder={t('pages.stock.searchProducts')}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           className="max-w-sm"
         />
         <Button
           variant={showLowStock ? 'default' : 'outline'}
-          onClick={() => setShowLowStock(!showLowStock)}
+          onClick={() => {
+            setShowLowStock(!showLowStock)
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
         >
           <AlertTriangle className="mr-2 h-4 w-4" />
           {t('pages.stock.lowStockOnly')}
@@ -189,10 +222,16 @@ export function StockPage() {
       </div>
 
       {/* Table */}
-      <DataTable
+      <ServerDataTable
         columns={columns}
         data={stockLevels}
         isLoading={isLoading}
+        pageCount={pageCount}
+        totalItems={total}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
         emptyPreset="inventory"
         emptyMessage={t('pages.stock.emptyMessage')}
       />

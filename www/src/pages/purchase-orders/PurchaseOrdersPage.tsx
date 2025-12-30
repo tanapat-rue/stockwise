@@ -6,7 +6,7 @@ import { Plus, MoreHorizontal, Eye, Package, XCircle, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { ServerDataTable, ServerSortableHeader, type PaginationState, type SortingParams } from '@/components/ui/server-data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,20 +45,31 @@ export function PurchaseOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<POStatus | 'all'>('all')
   const [receivingPO, setReceivingPO] = useState<PurchaseOrder | null>(null)
   const [cancellingPO, setCancellingPO] = useState<PurchaseOrder | null>(null)
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingParams>({})
 
   const { data: poData, isLoading } = usePurchaseOrders({
     search,
     status: statusFilter === 'all' ? undefined : statusFilter,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
   })
   const cancelPO = useCancelPurchaseOrder()
   const duplicatePO = useDuplicatePurchaseOrder()
 
   const purchaseOrders = poData?.data || []
+  const meta = poData?.meta || { page: 1, limit: 10, total: 0, totalPages: 0 }
 
   const columns: ColumnDef<PurchaseOrder>[] = [
     {
       accessorKey: 'orderNumber',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.purchaseOrders.poNumber')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.purchaseOrders.poNumber')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <Link
           to={`/purchase-orders/${row.original.id}/edit`}
@@ -70,11 +81,19 @@ export function PurchaseOrdersPage() {
     },
     {
       accessorKey: 'supplierName',
-      header: ({ column }) => <SortableHeader column={column}>{t('navigation.suppliers')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('navigation.suppliers')}
+        </ServerSortableHeader>
+      ),
     },
     {
       accessorKey: 'totalAmount',
-      header: ({ column }) => <SortableHeader column={column}>{t('common.total')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('common.total')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatCurrency(row.getValue('totalAmount')),
     },
     {
@@ -111,7 +130,11 @@ export function PurchaseOrdersPage() {
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.purchaseOrders.created')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.purchaseOrders.created')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatDate(row.getValue('createdAt')),
     },
     {
@@ -186,7 +209,10 @@ export function PurchaseOrdersPage() {
         <Input
           placeholder={t('pages.purchaseOrders.searchPOs')}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           className="max-w-sm"
         />
         <Combobox
@@ -198,7 +224,10 @@ export function PurchaseOrdersPage() {
             { value: 'CANCELLED', label: t('status.cancelled') },
           ]}
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as POStatus | 'all')}
+          onValueChange={(value) => {
+            setStatusFilter(value as POStatus | 'all')
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           placeholder={t('status.all')}
           searchPlaceholder={t('pages.orders.searchStatus')}
           className="w-44"
@@ -206,10 +235,16 @@ export function PurchaseOrdersPage() {
       </div>
 
       {/* Table */}
-      <DataTable
+      <ServerDataTable
         columns={columns}
         data={purchaseOrders}
         isLoading={isLoading}
+        pageCount={meta.totalPages}
+        totalItems={meta.total}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
         emptyPreset="purchase-orders"
         emptyMessage={t('pages.purchaseOrders.emptyMessage')}
       />

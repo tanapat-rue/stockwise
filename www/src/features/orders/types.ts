@@ -91,6 +91,8 @@ export interface OrderListParams {
   endDate?: string
   page?: number
   limit?: number
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface OrderListResponse {

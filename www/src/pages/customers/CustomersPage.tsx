@@ -4,7 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Pencil, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { ServerDataTable, ServerSortableHeader, type PaginationState, type SortingParams } from '@/components/ui/server-data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,13 +30,23 @@ export function CustomersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingParams>({})
 
-  const { data: customersData, isLoading } = useCustomers({ search })
+  const { data: customersData, isLoading } = useCustomers({
+    search,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
+  })
   const createCustomer = useCreateCustomer()
   const updateCustomer = useUpdateCustomer()
   const deleteCustomer = useDeleteCustomer()
 
   const customers = customersData?.data || []
+  const total = customersData?.total || 0
+  const pageCount = Math.ceil(total / pagination.pageSize)
 
   const columns: ColumnDef<Customer>[] = [
     {
@@ -48,7 +58,11 @@ export function CustomersPage() {
     },
     {
       accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column}>{t('common.name')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('common.name')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -70,11 +84,19 @@ export function CustomersPage() {
     },
     {
       accessorKey: 'totalOrders',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.customers.orders')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.customers.orders')}
+        </ServerSortableHeader>
+      ),
     },
     {
       accessorKey: 'totalSpent',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.customers.totalSpent')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.customers.totalSpent')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatCurrency(row.getValue('totalSpent')),
     },
     {
@@ -143,15 +165,24 @@ export function CustomersPage() {
       <Input
         placeholder={t('pages.customers.searchCustomers')}
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+        }}
         className="max-w-sm"
       />
 
       {/* Table */}
-      <DataTable
+      <ServerDataTable
         columns={columns}
         data={customers}
         isLoading={isLoading}
+        pageCount={pageCount}
+        totalItems={total}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
         emptyPreset="customers"
         emptyMessage={t('pages.customers.emptyMessage')}
       />

@@ -4,7 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Pencil, Trash2, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { ServerDataTable, ServerSortableHeader, type PaginationState, type SortingParams } from '@/components/ui/server-data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,13 +30,23 @@ export function SuppliersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
   const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null)
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingParams>({})
 
-  const { data: suppliersData, isLoading } = useSuppliers({ search })
+  const { data: suppliersData, isLoading } = useSuppliers({
+    search,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
+  })
   const createSupplier = useCreateSupplier()
   const updateSupplier = useUpdateSupplier()
   const deleteSupplier = useDeleteSupplier()
 
   const suppliers = suppliersData?.data || []
+  const total = suppliersData?.total || 0
+  const pageCount = Math.ceil(total / pagination.pageSize)
 
   const columns: ColumnDef<Supplier>[] = [
     {
@@ -48,7 +58,11 @@ export function SuppliersPage() {
     },
     {
       accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column}>{t('common.name')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('common.name')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -70,11 +84,19 @@ export function SuppliersPage() {
     },
     {
       accessorKey: 'totalOrders',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.suppliers.pos')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.suppliers.pos')}
+        </ServerSortableHeader>
+      ),
     },
     {
       accessorKey: 'totalPurchased',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.suppliers.totalPurchased')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.suppliers.totalPurchased')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatCurrency(row.getValue('totalPurchased')),
     },
     {
@@ -143,15 +165,24 @@ export function SuppliersPage() {
       <Input
         placeholder={t('pages.suppliers.searchSuppliers')}
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+        }}
         className="max-w-sm"
       />
 
       {/* Table */}
-      <DataTable
+      <ServerDataTable
         columns={columns}
         data={suppliers}
         isLoading={isLoading}
+        pageCount={pageCount}
+        totalItems={total}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
         emptyPreset="suppliers"
         emptyMessage={t('pages.suppliers.emptyMessage')}
       />

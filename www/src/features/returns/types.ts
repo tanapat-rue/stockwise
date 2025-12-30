@@ -56,6 +56,8 @@ export interface ReturnListParams {
   status?: ReturnStatus
   page?: number
   limit?: number
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface ReturnListResponse {

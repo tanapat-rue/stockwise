@@ -5,7 +5,7 @@ import { Plus, MoreHorizontal, Eye, CheckCircle, XCircle, RotateCcw } from 'luci
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { ServerDataTable, ServerSortableHeader, type PaginationState, type SortingParams } from '@/components/ui/server-data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,22 +34,34 @@ export function ReturnsPage() {
   const [statusFilter, setStatusFilter] = useState<ReturnStatus | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<ReturnType | 'all'>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingParams>({})
 
   const { data: returnsData, isLoading } = useReturns({
     search,
     status: statusFilter === 'all' ? undefined : statusFilter,
     type: typeFilter === 'all' ? undefined : typeFilter,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
   })
   const approveReturn = useApproveReturn()
   const rejectReturn = useRejectReturn()
   const receiveReturn = useReceiveReturn()
 
   const returns = returnsData?.data || []
+  const total = returnsData?.total || 0
+  const pageCount = Math.ceil(total / pagination.pageSize)
 
   const columns: ColumnDef<Return>[] = [
     {
       accessorKey: 'refNo',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.returns.refNumber')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.returns.refNumber')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <span className="font-medium text-primary">{row.getValue('refNo')}</span>
       ),
@@ -96,7 +108,11 @@ export function ReturnsPage() {
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.purchaseOrders.created')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.purchaseOrders.created')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatDate(row.getValue('createdAt')),
     },
     {
@@ -161,7 +177,10 @@ export function ReturnsPage() {
         <Input
           placeholder={t('pages.returns.searchReturns')}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           className="max-w-sm"
         />
         <Combobox
@@ -171,7 +190,10 @@ export function ReturnsPage() {
             { value: 'SUPPLIER', label: t('status.supplier') },
           ]}
           value={typeFilter}
-          onValueChange={(value) => setTypeFilter(value as ReturnType | 'all')}
+          onValueChange={(value) => {
+            setTypeFilter(value as ReturnType | 'all')
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           placeholder={t('status.allTypes')}
           searchPlaceholder={t('pages.returns.searchType')}
           className="w-36"
@@ -186,7 +208,10 @@ export function ReturnsPage() {
             { value: 'COMPLETED', label: t('status.completed') },
           ]}
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as ReturnStatus | 'all')}
+          onValueChange={(value) => {
+            setStatusFilter(value as ReturnStatus | 'all')
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           placeholder={t('status.all')}
           searchPlaceholder={t('pages.returns.searchStatus')}
           className="w-40"
@@ -194,10 +219,16 @@ export function ReturnsPage() {
       </div>
 
       {/* Table */}
-      <DataTable
+      <ServerDataTable
         columns={columns}
         data={returns}
         isLoading={isLoading}
+        pageCount={pageCount}
+        totalItems={total}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
         emptyMessage={t('pages.returns.emptyMessage')}
       />
     </div>

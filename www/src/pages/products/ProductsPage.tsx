@@ -4,7 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, MoreHorizontal, Pencil, Trash2, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DataTable, SortableHeader } from '@/components/ui/data-table'
+import { ServerDataTable, ServerSortableHeader, type PaginationState, type SortingParams } from '@/components/ui/server-data-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,25 +30,42 @@ export function ProductsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingParams>({})
 
-  const { data: productsData, isLoading } = useProducts({ search })
+  const { data: productsData, isLoading } = useProducts({
+    search,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
+  })
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
 
   const products = productsData?.data || []
+  const meta = productsData?.meta || { page: 1, limit: 10, total: 0, totalPages: 0 }
 
   const columns: ColumnDef<Product>[] = [
     {
       accessorKey: 'sku',
-      header: ({ column }) => <SortableHeader column={column}>{t('pages.products.sku')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('pages.products.sku')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <span className="font-mono text-sm">{row.getValue('sku')}</span>
       ),
     },
     {
       accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column}>{t('common.name')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('common.name')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -65,7 +82,11 @@ export function ProductsPage() {
     },
     {
       accessorKey: 'price',
-      header: ({ column }) => <SortableHeader column={column}>{t('common.price')}</SortableHeader>,
+      header: ({ column }) => (
+        <ServerSortableHeader column={column}>
+          {t('common.price')}
+        </ServerSortableHeader>
+      ),
       cell: ({ row }) => formatCurrency(row.getValue('price')),
     },
     {
@@ -135,16 +156,25 @@ export function ProductsPage() {
         <Input
           placeholder={t('pages.products.searchProducts')}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+          }}
           className="max-w-sm"
         />
       </div>
 
       {/* Table */}
-      <DataTable
+      <ServerDataTable
         columns={columns}
         data={products}
         isLoading={isLoading}
+        pageCount={meta.totalPages}
+        totalItems={meta.total}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
         emptyPreset="products"
         emptyMessage={t('pages.products.emptyMessage')}
       />
